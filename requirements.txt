@@ -1,2 +1,2 @@
-discord.py
-python-dotenv
+discord.py==2.2.2
+python-dotenv==1.0.0
