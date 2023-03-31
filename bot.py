@@ -9,7 +9,8 @@ import random
 from dotenv import load_dotenv
 
 
-TOKEN = "bot_token"
+load_dotenv()
+TOKEN = os.getenv('DISCORD_TOKEN')
 
 intents = discord.Intents.default()
 intents.voice_states = True
@@ -21,7 +22,6 @@ client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
 
 
-load_dotenv()
 message_data = {}
 private_channels = {}
 sub_admin_roles = defaultdict(lambda: None)
