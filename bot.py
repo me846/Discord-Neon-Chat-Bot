@@ -126,13 +126,24 @@ async def delete_message(interaction: discord.Interaction, n: str):
     await interaction.channel.send(f"{deleted_count}個のメッセージを削除しました。")
 
 
-# 現在の日本時間を取得する関数
-def get_jst_now():
-    utc_now = datetime.utcnow()
-    jst = pytz.timezone('Asia/Tokyo')
-    return utc_now.astimezone(jst)
 
 # ここから予定投票、及び通知コード
+@tree.command(name="time_add_comment", description="Set a time and comment for a notification")
+async def set_time_and_comment(interaction: discord.Interaction, time: str, comment: str):
+    if not re.match(r'^([0-1]\d|2[0-3]):([0-5]\d)$', time):
+        await interaction.response.send_message("時間は半角数字で00:00の形式で入力してください。（00〜23の間）", ephemeral=True)
+        return
+
+    channel = interaction.channel
+    message = await channel.send(f"> ```py\n> {time}に{comment}が予定されました！リアクションボタンを押してください。```\n")
+    message_id = message.id
+    message_data[message_id] = (time, comment, message, [], False, [], interaction.user)
+
+    await message.add_reaction("⏰")
+    await message.add_reaction("❌")
+
+    await interaction.response.send_message(f"> ```py\n> 通知が{time}に設定されました。```\n", ephemeral=True) #メッセージを隠す
+
 @client.event
 async def on_raw_reaction_add(payload):
     if payload.member == client.user:
@@ -160,7 +171,11 @@ async def notify():
     while True:
         for message_id, data in list(message_data.items()):
             scheduled_time, comment, message, users, cancelled, cancelled_messages, author = data
-            current_time = get_jst_now().strftime('%H:%M')  # 現在の日本時間を取得
+
+            # 現在のUTC時間を取得し、日本時間に変換
+            utc_now = datetime.now(pytz.utc)
+            jst_now = utc_now.astimezone(pytz.timezone("Asia/Tokyo"))
+            current_time = jst_now.strftime('%H:%M')
 
             if current_time == scheduled_time and not cancelled:
                 if not users: # ユーザーがいない場合
