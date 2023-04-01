@@ -140,7 +140,7 @@ async def set_time_and_comment(interaction: discord.Interaction, time: str, comm
 
     # 通知時刻が過去の場合、翌日に設定
     if notify_time_jst < now:
-        notify_time_jst += notify_time_jst += timedelta(days=1)
+        notify_time_jst += timedelta(days=1)
 
     channel = interaction.channel
     message = await channel.send(f"> ```py\n> {time}に{comment}が予定されました！リアクションボタンを押してください。```\n")
