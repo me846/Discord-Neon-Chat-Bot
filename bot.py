@@ -151,7 +151,7 @@ async def set_time_and_comment(interaction: discord.Interaction, time: str, comm
     await message.add_reaction("❌")
 
     # 応答を送信する前に、interaction.responseの代わりにfollowup.send()を使用します。
-    await interaction.followup.send(f"> ```py\n> 通知が{time}に設定されました。```\n", ephemeral=True)
+    await interaction.channel.send(f"> ```py\n> 通知が{time}に設定されました。```\n", ephemeral=True)
 
 @client.event
 async def on_raw_reaction_add(payload):
@@ -176,11 +176,13 @@ async def on_raw_reaction_add(payload):
                     await message.clear_reactions() # リアクションを全削除
                     message_data[message_id] = (time, comment, message, users, True, [], author)
 
-async def notify():
+                    async def notify():
     while True:
         for message_id, data in list(message_data.items()):
             scheduled_time, comment, message, users, cancelled, cancelled_messages, author = data
-            current_time = datetime.now(jst).strftime('%H:%M')
+            current_time_jst = datetime.datetime.now(jst).strftime('%H:%M')  # 日本時間で現在時刻を取得
+
+            if current_time_jst == scheduled_time and not cancelled:
 
             if current_time == scheduled_time and not cancelled:
                 if not users: # ユーザーがいない場合
