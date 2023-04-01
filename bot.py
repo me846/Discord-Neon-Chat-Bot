@@ -7,11 +7,10 @@ import os
 from collections import defaultdict
 import random
 from dotenv import load_dotenv
-from pytz import timezone
-from datetime import datetime, timedelta, timezone
+import pytz
+from datetime import datetime
 
-jst = timezone(timedelta(hours=+9), 'JST')
-load_dotenv()
+
 TOKEN = os.getenv('DISCORD_TOKEN')
 
 intents = discord.Intents.default()
@@ -126,6 +125,13 @@ async def delete_message(interaction: discord.Interaction, n: str):
 
     await interaction.channel.send(f"{deleted_count}個のメッセージを削除しました。")
 
+
+# 現在の日本時間を取得する関数
+def get_jst_now():
+    utc_now = datetime.utcnow()
+    jst = pytz.timezone('Asia/Tokyo')
+    return utc_now.astimezone(jst)
+
 # ここから予定投票、及び通知コード
 @tree.command(name="time_add_comment", description="Set a time and comment for a notification")
 async def set_time_and_comment(interaction: discord.Interaction, time: str, comment: str):
@@ -180,8 +186,8 @@ async def notify():
     while True:
         for message_id, data in list(message_data.items()):
             scheduled_time, comment, message, users, cancelled, cancelled_messages, author = data
-            current_time_jst = datetime.datetime.now(jst).strftime('%H:%M')  # 日本時間で現在時刻を取得
-            
+            current_time = get_jst_now().strftime('%H:%M')  # 現在の日本時間を取得
+
             if current_time == scheduled_time and not cancelled:
                 if not users: # ユーザーがいない場合
                     await message.reply("__:warning:誰も居ませんね！予定をキャンセルします！:warning:__")
