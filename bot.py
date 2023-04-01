@@ -7,8 +7,10 @@ import os
 from collections import defaultdict
 import random
 from dotenv import load_dotenv
+from pytz import timezone
+import datetime
 
-
+jst = timezone('Asia/Tokyo')
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
@@ -131,10 +133,14 @@ async def set_time_and_comment(interaction: discord.Interaction, time: str, comm
         await interaction.response.send_message("時間は半角数字で00:00の形式で入力してください。（00〜23の間）", ephemeral=True)
         return
 
+    # JSTで設定された通知時刻を取得
+    hour, minute = time.split(':')
+    notify_time_jst = datetime.datetime.now(jst).replace(hour=int(hour), minute=int(minute), second=0, microsecond=0)
+
     channel = interaction.channel
     message = await channel.send(f"> ```py\n> {time}に{comment}が予定されました！リアクションボタンを押してください。```\n")
     message_id = message.id
-    message_data[message_id] = (time, comment, message, [], False, [], interaction.user)
+    message_data[message_id] = (notify_time_jst, comment, message, [], False, [], interaction.user)
 
     await message.add_reaction("⏰")
     await message.add_reaction("❌")
