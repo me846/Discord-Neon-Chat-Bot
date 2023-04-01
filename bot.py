@@ -133,32 +133,6 @@ def get_jst_now():
     return utc_now.astimezone(jst)
 
 # ここから予定投票、及び通知コード
-@tree.command(name="time_add_comment", description="Set a time and comment for a notification")
-async def set_time_and_comment(interaction: discord.Interaction, time: str, comment: str):
-    if not re.match(r'^([0-1]\d|2[0-3]):([0-5]\d)$', time):
-        await interaction.response.send_message("時間は半角数字で00:00の形式で入力してください。（00〜23の間）", ephemeral=True)
-        return
-
-    # JSTで設定された通知時刻を取得
-    hour, minute = time.split(':')
-    now = datetime.now(jst)
-    notify_time_jst = now.replace(hour=int(hour), minute=int(minute), second=0, microsecond=0)
-
-    # 通知時刻が過去の場合、翌日に設定
-    if notify_time_jst < now:
-        notify_time_jst += timedelta(days=1)
-
-    channel = interaction.channel
-    message = await channel.send(f"> ```py\n> {time}に{comment}が予定されました！リアクションボタンを押してください。```\n")
-    message_id = message.id
-    message_data[message_id] = (notify_time_jst, comment, message, [], False, [], interaction.user)
-
-    await message.add_reaction("⏰")
-    await message.add_reaction("❌")
-
-    # 応答を送信する前に、interaction.responseの代わりにfollowup.send()を使用します。
-    await interaction.channel.send(f"> ```py\n> 通知が{time}に設定されました。```\n", ephemeral=True)
-
 @client.event
 async def on_raw_reaction_add(payload):
     if payload.member == client.user:
@@ -205,6 +179,7 @@ async def notify():
                         del message_data[message_id]
 
         await asyncio.sleep(1)  # 1秒毎にチェック
+
 
 # メンバー入場時の挨拶
 async def send_greeting(member, private_channel):
