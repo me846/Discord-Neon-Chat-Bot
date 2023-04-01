@@ -8,7 +8,7 @@ from collections import defaultdict
 import random
 from dotenv import load_dotenv
 from pytz import timezone
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 
 jst = timezone(timedelta(hours=+9), 'JST')
 load_dotenv()
