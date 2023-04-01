@@ -176,14 +176,12 @@ async def on_raw_reaction_add(payload):
                     await message.clear_reactions() # リアクションを全削除
                     message_data[message_id] = (time, comment, message, users, True, [], author)
 
-                    async def notify():
+async def notify():
     while True:
         for message_id, data in list(message_data.items()):
             scheduled_time, comment, message, users, cancelled, cancelled_messages, author = data
             current_time_jst = datetime.datetime.now(jst).strftime('%H:%M')  # 日本時間で現在時刻を取得
-
-            if current_time_jst == scheduled_time and not cancelled:
-
+            
             if current_time == scheduled_time and not cancelled:
                 if not users: # ユーザーがいない場合
                     await message.reply("__:warning:誰も居ませんね！予定をキャンセルします！:warning:__")
