@@ -135,7 +135,7 @@ async def set_time_and_comment(interaction: discord.Interaction, time: str, comm
 
     # JSTで設定された通知時刻を取得
     hour, minute = time.split(':')
-    now = datetime.datetime.now(jst)
+    now = datetime.now(jst)
     notify_time_jst = now.replace(hour=int(hour), minute=int(minute), second=0, microsecond=0)
 
     # 通知時刻が過去の場合、翌日に設定
