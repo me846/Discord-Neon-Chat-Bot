@@ -150,7 +150,8 @@ async def set_time_and_comment(interaction: discord.Interaction, time: str, comm
     await message.add_reaction("⏰")
     await message.add_reaction("❌")
 
-    await interaction.response.send_message(f"> ```py\n> 通知が{time}に設定されました。```\n", ephemeral=True) #メッセージを隠す
+    # 応答を送信する前に、interaction.responseの代わりにfollowup.send()を使用します。
+    await interaction.followup.send(f"> ```py\n> 通知が{time}に設定されました。```\n", ephemeral=True)
 
 @client.event
 async def on_raw_reaction_add(payload):
