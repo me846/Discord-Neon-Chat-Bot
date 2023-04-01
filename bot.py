@@ -8,9 +8,9 @@ from collections import defaultdict
 import random
 from dotenv import load_dotenv
 from pytz import timezone
-import datetime
+from datetime import datetime, timedelta, timezone
 
-jst = timezone('Asia/Tokyo')
+jst = timezone(timedelta(hours=+9), 'JST')
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
@@ -180,7 +180,7 @@ async def notify():
     while True:
         for message_id, data in list(message_data.items()):
             scheduled_time, comment, message, users, cancelled, cancelled_messages, author = data
-            current_time = datetime.now().strftime('%H:%M')
+            current_time = datetime.now(jst).strftime('%H:%M')
 
             if current_time == scheduled_time and not cancelled:
                 if not users: # ユーザーがいない場合
