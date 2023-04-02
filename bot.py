@@ -5,6 +5,7 @@ import asyncio
 import random
 import asyncio
 import pytz
+import openai
 
 from datetime import datetime
 from collections import defaultdict
