@@ -371,12 +371,12 @@ async def on_voice_state_update(member, before, after):
 # ヘルプコマンド
 @tree.command(name="help", description="このボットの使い方を表示します。")
 async def help_command(interaction: discord.Interaction):
-    embed = discord.Embed(title="ボットの使い方", color=discord.Color.blue())\n
+    embed = discord.Embed(title="ボットの使い方", color=discord.Color.blue())
 
-    embed.add_field(name="/chat [prompt]", value="AIとチャットを楽しむためのコマンドです。\n[prompt]に質問や会話の内容を入力してください。", inline=False)\n
-    embed.add_field(name="/time_add_comment <time> <comment>", value="指定した時刻とコメントで通知を設定します。\n例: `/time_add_comment 14:30 会議が始まります。`", inline=False)\n
-    embed.add_field(name="/sub_admin_add <@member>", value="指定されたメンバーにサブ管理者の役職を付与します。\n例: `/sub_admin_add @member`", inline=False)\n
-    embed.add_field(name="/delete_message <n>", value="指定された数のメッセージを削除します。nに'all'を入力すると、チャンネル内のすべてのメッセージが削除されます。\n例: `/delete_message 10`", inline=False)\n
+    embed.add_field(name="/chat [prompt]", value="AIとチャットを楽しむためのコマンドです。\n[prompt]に質問や会話の内容を入力してください。", inline=False)
+    embed.add_field(name="/time_add_comment <time> <comment>", value="指定した時刻とコメントで通知を設定します。\n例: `/time_add_comment 14:30 会議が始まります。`", inline=False)
+    embed.add_field(name="/sub_admin_add <@member>", value="指定されたメンバーにサブ管理者の役職を付与します。\n例: `/sub_admin_add @member`", inline=False)
+    embed.add_field(name="/delete_message <n>", value="指定された数のメッセージを削除します。nに'all'を入力すると、チャンネル内のすべてのメッセージが削除されます。\n例: `/delete_message 10`", inline=False)
     embed.add_field(name="ボイスチャンネルへの参加/退出", value="ボイスチャンネルに参加すると、専用のプライベートテキストチャンネルが作成されます。ボイスチャンネルから退出すると、そのテキストチャンネルへのアクセスが解除されます。全員が退出するとプライベートチャンネル内のチャットは削除されます", inline=False)
 
     # ヘルプメッセージを送信します
