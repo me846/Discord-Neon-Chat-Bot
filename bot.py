@@ -7,6 +7,7 @@ import asyncio
 import pytz
 import openai
 
+from discord.ext import tasks
 from datetime import datetime
 from collections import defaultdict
 from dotenv import load_dotenv
