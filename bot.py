@@ -175,6 +175,7 @@ async def delete_message(interaction: discord.Interaction, n: str):
 
 
 
+
 # ここから予定投票、及び通知コード
 @tree.command(name="time_add_comment", description="Set a time and comment for a notification")
 async def set_time_and_comment(interaction: discord.Interaction, time: str, comment: str):
