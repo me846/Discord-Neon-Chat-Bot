@@ -180,7 +180,7 @@ async def delete_message(interaction: discord.Interaction, n: str):
 
 
 # ここから予定投票、及び通知コード
-@tree.command(name="time_add_comment", description="Set a time and comment for a notification")
+@tree.command(name="time_add_comment", description="通知のために時間とコメントを設定してください")
 async def set_time_and_comment(interaction: discord.Interaction, time: str, comment: str):
     if not re.match(r'^([0-1]\d|2[0-3]):([0-5]\d)$', time):
         await interaction.response.send_message("時間は半角数字で00:00の形式で入力してください。（00〜23の間）", ephemeral=True)
