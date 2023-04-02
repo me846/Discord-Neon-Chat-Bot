@@ -378,8 +378,8 @@ async def help_command(interaction: discord.Interaction):
     embed.add_field(name="/time_add_comment <time> <comment>", value="指定した時刻とコメントで通知を設定します。\n例: `/time_add_comment 14:30 会議が始まります。`", inline=False)
     embed.add_field(name="/delete_message <n>", value="指定された数のメッセージを削除します。nに'all'を入力すると、チャンネル内のすべてのメッセージが削除されます。*2\n例: `/delete_message 10`", inline=False)
     embed.add_field(name="ボイスチャンネルへの参加/退出", value="ボイスチャンネルに参加すると、専用のプライベートテキストチャンネルが作成されます。ボイスチャンネルから退出すると、そのテキストチャンネルへのアクセスが解除されます。全員が退出するとプライベートチャンネル内のチャットは削除されます", inline=False)
-    embed.add_field(name="*1 サブ管理者は管理者以外に/delete_messageを使うために必要な権限です。今後この権限を使ったコマンドを実装予定です", inline=False)
-    embed.add_field(name="*2 APIレートが制限された場合、最小限の動作になります。/n 詳しくはhttps://support-dev.discord.com/hc/ja/articles/6223003921559-%E7%A7%81%E3%81%AEBot%E3%81%8C%E3%83%AC%E3%83%BC%E3%83%88%E5%88%B6%E9%99%90%E3%81%95%E3%82%8C%E3%81%A6%E3%82%8B-　 ", inline=False)
+    embed.add_field(name="*1", value="サブ管理者は管理者以外に/delete_messageを使うために必要な権限です。今後この権限を使ったコマンドを実装予定です", inline=False)
+    embed.add_field(name="*2", value="APIレートが制限された場合、最小限の動作になります。/n 詳しくはhttps://support-dev.discord.com/hc/ja/articles/6223003921559-%E7%A7%81%E3%81%AEBot%E3%81%8C%E3%83%AC%E3%83%BC%E3%83%88%E5%88%B6%E9%99%90%E3%81%95%E3%82%8C%E3%81%A6%E3%82%8B-　 ", inline=False)
 
     # ヘルプメッセージを送信します
     await interaction.response.send_message(embed=embed) # メッセージを隠す
