@@ -382,4 +382,4 @@ async def help_command(interaction: discord.Interaction):
     # ヘルプメッセージを送信します
     await interaction.response.send_message(embed=embed) # メッセージを隠す
 
-client.run(TOKEN
+client.run(TOKEN)
