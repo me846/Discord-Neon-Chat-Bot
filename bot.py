@@ -16,7 +16,7 @@ load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-TOKEN_LIMIT = 5000  # 例: 1ヶ月あたりのトークン使用量上限
+TOKEN_LIMIT = 10000  # 例: 1ヶ月あたりのトークン使用量上限
 PREVIOUS_MESSAGES_LIMIT = 3
 user_token_count = {}  # 各ユーザーのトークン使用量を格納するディクショナリ
 
