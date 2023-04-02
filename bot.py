@@ -6,8 +6,7 @@ import random
 import asyncio
 import pytz
 import openai
-from discord import app_commands
-from discord.ext import tasks
+from discord.ext import commands, tasks
 from datetime import datetime
 from collections import defaultdict
 from dotenv import load_dotenv
