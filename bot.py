@@ -10,8 +10,9 @@ from dotenv import load_dotenv
 import pytz
 from datetime import datetime
 
-
+load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 intents = discord.Intents.default()
 intents.voice_states = True
@@ -65,6 +66,50 @@ async def sub_admin_add(interaction: discord.Interaction, member: discord.Member
     # 指定されたユーザーにサブ管理者の役職を付与する
     await member.add_roles(sub_admin_role)
     await interaction.response.send_message(f"{member.display_name}にサブ管理者の役職を付与しました。")
+
+    
+# Chat gptのチャット機能
+@tree.command(name="chat", description="AIとのチャット機能です")
+async def chat(interaction: discord.Interaction, prompt: str):
+    # ユーザートークンの辞書が存在するかどうかを確認し、存在しない場合は作成する
+    if not hasattr(client, 'user_token_count'):
+        client.user_token_count = {}
+
+    # ユーザーが既に辞書に存在するかどうかを確認し、存在しない場合は0トークン使用で追加する
+    user_id = interaction.user.id
+    if user_id not in client.user_token_count:
+        client.user_token_count[user_id] = 0
+
+    # 応答を遅延させる
+    await interaction.response.defer(ephemeral=True)
+
+    # ユーザーがトークン制限を超過していないか確認する
+    if client.user_token_count[user_id] >= TOKEN_LIMIT:
+        await interaction.followup.send("トークンの仕様上限に達しています。", ephemeral=True)
+        return
+
+    # プロンプトの最後に改行を追加する
+    response = openai.Completion.create(
+        engine="text-davinci-003",
+        prompt=f"{prompt}\nAI:",
+        max_tokens=1000,
+        n=1,
+        stop=None,
+        temperature=0.5,
+    )
+    response_text = response.choices[0].text.strip()
+
+    
+
+    await interaction.followup.send(response_text, ephemeral=False)
+
+    # ユーザーのトークン使用量を更新する
+    client.user_token_count[user_id] += len(response_text)
+
+    # 残りのトークン数を表示する
+    remaining_tokens = TOKEN_LIMIT - client.user_token_count[user_id]
+    await interaction.followup.send(f"残りのトークン数: {remaining_tokens}", ephemeral=True)
+
 
 
 
