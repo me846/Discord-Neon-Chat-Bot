@@ -6,7 +6,6 @@ import random
 import asyncio
 import pytz
 import openai
-
 from discord import app_commands
 from discord.ext import tasks
 from datetime import datetime
