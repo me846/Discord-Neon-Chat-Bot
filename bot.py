@@ -91,7 +91,7 @@ async def chat(interaction: discord.Interaction, prompt: str):
 
     # ユーザーがトークン制限を超過していないか確認する
     if client.user_token_count[user_id] >= TOKEN_LIMIT:
-        await interaction.followup.send("トークンの仕様上限に達しています。", ephemeral=True)
+        await interaction.followup.send("トークンの使用量上限に達しています。", ephemeral=True)
         return
 
     # プロンプトの最後に改行を追加する
@@ -163,7 +163,7 @@ async def delete_message(interaction: discord.Interaction, n: str):
     is_all = n == "all"
 
     while is_all or deleted_count < n:
-        limit = 100 if is_all else min(n - deleted_count, 100)
+        limit = 50 if is_all else min(n - deleted_count, 50)
         messages = []
         async for message in interaction.channel.history(limit=limit):
             if message.id != original_message_id:  # オリジナルのメッセージは削除しない
@@ -373,11 +373,13 @@ async def on_voice_state_update(member, before, after):
 async def help_command(interaction: discord.Interaction):
     embed = discord.Embed(title="ボットの使い方", color=discord.Color.blue())
 
+    embed.add_field(name="/sub_admin_add <@member>", value="指定されたメンバーにサブ管理者の役職を付与します。*1\n例: `/sub_admin_add @member`", inline=False)
     embed.add_field(name="/chat [prompt]", value="AIとチャットを楽しむためのコマンドです。\n[prompt]に質問や会話の内容を入力してください。", inline=False)
     embed.add_field(name="/time_add_comment <time> <comment>", value="指定した時刻とコメントで通知を設定します。\n例: `/time_add_comment 14:30 会議が始まります。`", inline=False)
-    embed.add_field(name="/sub_admin_add <@member>", value="指定されたメンバーにサブ管理者の役職を付与します。\n例: `/sub_admin_add @member`", inline=False)
-    embed.add_field(name="/delete_message <n>", value="指定された数のメッセージを削除します。nに'all'を入力すると、チャンネル内のすべてのメッセージが削除されます。\n例: `/delete_message 10`", inline=False)
+    embed.add_field(name="/delete_message <n>", value="指定された数のメッセージを削除します。nに'all'を入力すると、チャンネル内のすべてのメッセージが削除されます。*2\n例: `/delete_message 10`", inline=False)
     embed.add_field(name="ボイスチャンネルへの参加/退出", value="ボイスチャンネルに参加すると、専用のプライベートテキストチャンネルが作成されます。ボイスチャンネルから退出すると、そのテキストチャンネルへのアクセスが解除されます。全員が退出するとプライベートチャンネル内のチャットは削除されます", inline=False)
+    embed.add_field(name="*1 サブ管理者は管理者以外に/delete_messageを使うために必要な権限です。今後この権限を使ったコマンドを実装予定です", inline=False)
+    embed.add_field(name="*2 APIレートリミット制限された場合、最小限の動作になります。/n https://support-dev.discord.com/hc/ja/articles/6223003921559-%E7%A7%81%E3%81%AEBot%E3%81%8C%E3%83%AC%E3%83%BC%E3%83%88%E5%88%B6%E9%99%90%E3%81%95%E3%82%8C%E3%81%A6%E3%82%8B-　 ", inline=False)
 
     # ヘルプメッセージを送信します
     await interaction.response.send_message(embed=embed) # メッセージを隠す
