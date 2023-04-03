@@ -365,7 +365,7 @@ async def on_voice_state_update(member, before, after):
 
             # ボイスチャンネルに誰もいない場合は、チャットをクリアする
             if len(before.channel.members) == 0:
-                async for message in private_channel.history(limit=100):
+                async for message in private_channel.history(limit=10):
                     await message.delete()
 
 # ヘルプコマンド
