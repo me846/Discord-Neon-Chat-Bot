@@ -1,8 +1,4 @@
 discord.py==2.2.2
-<<<<<<< HEAD
-python-dotenv==1.0.0
-=======
 python-dotenv==1.0.0
 pytz==2023.3
 openai==0.27.2
->>>>>>> origin/master
