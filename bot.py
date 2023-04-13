@@ -1,15 +1,24 @@
-import discord
-from discord import app_commands
-import asyncio
-from datetime import datetime
 import re
 import os
-from collections import defaultdict
+import discord
+import asyncio
 import random
+import asyncio
+import pytz
+import openai
+from discord.ext import tasks
+from discord import app_commands
+from datetime import datetime
+from collections import defaultdict
 from dotenv import load_dotenv
 
+load_dotenv()
+TOKEN = os.getenv('DISCORD_TOKEN')
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
-TOKEN = "bot_token"
+TOKEN_LIMIT = 10000  # 例: 1ヶ月あたりのトークン使用量上限
+PREVIOUS_MESSAGES_LIMIT = 3
+user_token_count = {}  # 各ユーザーのトークン使用量を格納するディクショナリ
 
 intents = discord.Intents.default()
 intents.voice_states = True
@@ -21,7 +30,6 @@ client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
 
 
-load_dotenv()
 message_data = {}
 private_channels = {}
 sub_admin_roles = defaultdict(lambda: None)
@@ -64,6 +72,50 @@ async def sub_admin_add(interaction: discord.Interaction, member: discord.Member
     # 指定されたユーザーにサブ管理者の役職を付与する
     await member.add_roles(sub_admin_role)
     await interaction.response.send_message(f"{member.display_name}にサブ管理者の役職を付与しました。")
+
+    
+# Chat gptのチャット機能
+@tree.command(name="chat", description="AIとのチャット機能です")
+async def chat(interaction: discord.Interaction, prompt: str):
+    # ユーザートークンの辞書が存在するかどうかを確認し、存在しない場合は作成する
+    if not hasattr(client, 'user_token_count'):
+        client.user_token_count = {}
+
+    # ユーザーが既に辞書に存在するかどうかを確認し、存在しない場合は0トークン使用で追加する
+    user_id = interaction.user.id
+    if user_id not in client.user_token_count:
+        client.user_token_count[user_id] = 0
+
+    # 応答を遅延させる
+    await interaction.response.defer(ephemeral=True)
+
+    # ユーザーがトークン制限を超過していないか確認する
+    if client.user_token_count[user_id] >= TOKEN_LIMIT:
+        await interaction.followup.send("トークンの使用量上限に達しています。", ephemeral=True)
+        return
+
+    # プロンプトの最後に改行を追加する
+    response = openai.Completion.create(
+        engine="text-davinci-003",
+        prompt=f"{prompt}\nAI:",
+        max_tokens=1000,
+        n=1,
+        stop=None,
+        temperature=0.5,
+    )
+    response_text = response.choices[0].text.strip()
+
+    
+
+    await interaction.followup.send(response_text, ephemeral=False)
+
+    # ユーザーのトークン使用量を更新する
+    client.user_token_count[user_id] += len(response_text)
+
+    # 残りのトークン数を表示する
+    remaining_tokens = TOKEN_LIMIT - client.user_token_count[user_id]
+    await interaction.followup.send(f"残りのトークン数: {remaining_tokens}", ephemeral=True)
+
 
 
 
@@ -111,7 +163,7 @@ async def delete_message(interaction: discord.Interaction, n: str):
     is_all = n == "all"
 
     while is_all or deleted_count < n:
-        limit = 100 if is_all else min(n - deleted_count, 100)
+        limit = 50 if is_all else min(n - deleted_count, 50)
         messages = []
         async for message in interaction.channel.history(limit=limit):
             if message.id != original_message_id:  # オリジナルのメッセージは削除しない
@@ -124,8 +176,11 @@ async def delete_message(interaction: discord.Interaction, n: str):
 
     await interaction.channel.send(f"{deleted_count}個のメッセージを削除しました。")
 
+
+
+
 # ここから予定投票、及び通知コード
-@tree.command(name="time_add_comment", description="Set a time and comment for a notification")
+@tree.command(name="time_add_comment", description="通知のために時間とコメントを設定してください")
 async def set_time_and_comment(interaction: discord.Interaction, time: str, comment: str):
     if not re.match(r'^([0-1]\d|2[0-3]):([0-5]\d)$', time):
         await interaction.response.send_message("時間は半角数字で00:00の形式で入力してください。（00〜23の間）", ephemeral=True)
@@ -168,7 +223,11 @@ async def notify():
     while True:
         for message_id, data in list(message_data.items()):
             scheduled_time, comment, message, users, cancelled, cancelled_messages, author = data
-            current_time = datetime.now().strftime('%H:%M')
+
+            # 現在のUTC時間を取得し、日本時間に変換
+            utc_now = datetime.now(pytz.utc)
+            jst_now = utc_now.astimezone(pytz.timezone("Asia/Tokyo"))
+            current_time = jst_now.strftime('%H:%M')
 
             if current_time == scheduled_time and not cancelled:
                 if not users: # ユーザーがいない場合
@@ -187,6 +246,7 @@ async def notify():
                         del message_data[message_id]
 
         await asyncio.sleep(1)  # 1秒毎にチェック
+
 
 # メンバー入場時の挨拶
 async def send_greeting(member, private_channel):
@@ -221,41 +281,27 @@ async def send_greeting(member, private_channel):
         # デフォ
         f"{member.mention} VCチャットはこっちだよ！",
         # お嬢様
-        f"{member.mention} VCチャットはこちらにございますわ",
-        f"{member.mention} VCチャットの場所は、こちらですわ。お役に立てれば幸いです",
+        f"{member.mention} まあ、ご来訪いただき恐悦至極でございます。どうぞお入りくださいませ",
+        f"{member.mention} ご来訪を心よりお待ち申し上げておりました。どうぞお入りいただき、おくつろぎください。",
+        f"{member.mention} お客様のご来訪、誠に光栄でございます。どうぞお気軽にお入りくださいませ。",
         # ツンデレ
-        f"{member.mention} …ったく、VCチャットなんて、私が教えなきゃダメなの？ そんなもの、こっちよ",
-        f"{member.mention} な、VCチャットだって、普通は自分で探すものじゃないの？…でも、仕方ないわね、こっちよ",
-        f"{member.mention} VCチャット？もちろん、こっちよ。わざわざ教えてあげるから、感謝しなさいよ",
-        # ボク娘
-        f"{member.mention} えっと、VCチャット、こっちの方がありますよ～。使ってみますか？",
-        f"{member.mention} VCチャットの機能が必要でしたら、こちらを使ってもいいですよ。私がお手伝いします",
-        f"{member.mention} VCチャットの場所は、こっちの方にありますよ。使い方が分からなかったら、私に聞いてくださいね",
+        f"{member.mention} あんた、ここに来るなんて…まあ、入ってもいいけどね！",
+        f"{member.mention} なんであんたが来たのか分からないけど、仕方ないわね。入っていいわよ。",
+        f"{member.mention} 何でこんなところに？別に歓迎してるわけじゃないんだから。まあ、入っていいわよ。",
+        # 天然
+        f"{member.mention} あら、ここに来たのね。どうぞ、どうぞ、お入りなさい。",
+        f"{member.mention} わあ、来てくれたんだね。どうぞ、お気軽にお入りください。",
+        f"{member.mention} Vわあ、来てくれたんだね。どうぞ、お気軽にお入りください。",
         # 中二病
-        f"{member.mention} 呼吸を整えよう。VCチャットの場所は、ここにある…！",
-        f"{member.mention} 見たまえ！VCチャットの場所は、ここにあるぞ！",
-        f"{member.mention} 何ということだ…VCチャットの場所は、ここにあったとは…！",
-        # 幼馴染
-        f"{member.mention} ねえねえ、VCチャットって、こっちにあるんだよ。使ってみる？」",
-        f"{member.mention} ねえ、VCチャットの場所知ってる？こっちにあるんだよ。使ってみたい？",
-        # イケメン
-        f"{member.mention} Yo、VCチャットだぜ。場所はこっちだ。使ってみる？",
-        f"{member.mention} Hey、VCチャットだ。場所はこっちだ。使うか？",
-        f"{member.mention} What's up、VCチャットだぜ。場所はこっちだ。使ってみる？",
-        # 俺様
-        f"{member.mention} …フッ、VCチャットか。その場所はここだ。使うか？",
-        f"{member.mention} 俺が教える必要のあることか？VCチャットなら、ここだ。使うか？",
-        f"{member.mention} VCチャットって…場所はここだ。使いたかったらどうぞ",
-        # メスガキ
-        f"{member.mention} VCチャット？場所はこっちにあるんだよ。ほんと、はずかしくないのぉ?こんな簡単なことで！ざっこ〜♥",
-        f"{member.mention} VCチャットの場所はここだよ。オジサン、わかってる？",
-        # ヤンデレ
-        f"{member.mention} VCチャットはここだよ。ねえ、私がいないとダメなんでしょ？私以外の人と話したら、許さないわ。",
-        f"{member.mention} VCチャット、ここにあるの。私と話して、他の誰とも話さないでね。そうでないと、大変なことになるわよ？",
-        # 大阪弁
-        f"{member.mention} VCチャットやなぁ、ここにあるわ。しゃべりたいことあったら言うてや。",
-        f"{member.mention} VCチャット、ここにあるわ。話したいことあったら、どんどん言うてくれ。",
-        
+        f"{member.mention} 闇の扉を叩いた者よ、我が領域への侵入を許可する。",
+        f"{member.mention} おお、来たるべき者が現れたか。さあ、我が深淵へ進め！",
+        f"{member.mention} 運命の導きにより、ここへ辿り着いたか。恐れることなく、入っておくれ。",
+        f"{member.mention} 終焉の地にてお前を待ち受けていた。勇気を持ち、我が領域へ入るがいい。",
+        # 執事
+        f"{member.mention} ご来訪誠にありがとうございます。どうぞお入りくださいませ、お客様。",
+        f"{member.mention} いらっしゃいませ、お客様。こちらへどうぞお進みいただき、おくつろぎいただければと存じます。",
+        f"{member.mention} ご来館いただき、誠にありがとうございます。どうぞお気軽にお入りください。",
+        f"{member.mention} お越しいただき光栄でございます。どうぞお入りいただき、おくつろぎください。",
     ]
 
     # 特定のメンバーに対してメッセージを送信するか、ランダムなメッセージを送信します
@@ -305,7 +351,7 @@ async def on_voice_state_update(member, before, after):
 
             # ボイスチャンネルに誰もいない場合は、チャットをクリアする
             if len(before.channel.members) == 0:
-                async for message in private_channel.history(limit=100):
+                async for message in private_channel.history(limit=10):
                     await message.delete()
 
 # ヘルプコマンド
@@ -313,10 +359,13 @@ async def on_voice_state_update(member, before, after):
 async def help_command(interaction: discord.Interaction):
     embed = discord.Embed(title="ボットの使い方", color=discord.Color.blue())
 
+    embed.add_field(name="/sub_admin_add <@member>", value="指定されたメンバーにサブ管理者の役職を付与します。*1\n例: `/sub_admin_add @member`", inline=False)
+    embed.add_field(name="/chat [prompt]", value="AIとチャットを楽しむためのコマンドです。\n[prompt]に質問や会話の内容を入力してください。", inline=False)
     embed.add_field(name="/time_add_comment <time> <comment>", value="指定した時刻とコメントで通知を設定します。\n例: `/time_add_comment 14:30 会議が始まります。`", inline=False)
-    embed.add_field(name="/sub_admin_add <@member>", value="指定されたメンバーにサブ管理者の役職を付与します。\n例: `/sub_admin_add @member`", inline=False)
-    embed.add_field(name="/delete_message <n>", value="指定された数のメッセージを削除します。nに'all'を入力すると、チャンネル内のすべてのメッセージが削除されます。\n例: `/delete_message 10`", inline=False)
+    embed.add_field(name="/delete_message <n>", value="指定された数のメッセージを削除します。nに'all'を入力すると、チャンネル内のすべてのメッセージが削除されます。*2\n例: `/delete_message 10`", inline=False)
     embed.add_field(name="ボイスチャンネルへの参加/退出", value="ボイスチャンネルに参加すると、専用のプライベートテキストチャンネルが作成されます。ボイスチャンネルから退出すると、そのテキストチャンネルへのアクセスが解除されます。全員が退出するとプライベートチャンネル内のチャットは削除されます", inline=False)
+    embed.add_field(name="*1", value="サブ管理者は管理者以外に/delete_messageを使うために必要な権限です。今後この権限を使ったコマンドを実装予定です", inline=False)
+    embed.add_field(name="*2", value="APIレートが制限された場合、最小限の動作になります。/n詳しくはhttps://support-dev.discord.com/hc/ja/articles/6223003921559-%E7%A7%81%E3%81%AEBot%E3%81%8C%E3%83%AC%E3%83%BC%E3%83%88%E5%88%B6%E9%99%90%E3%81%95%E3%82%8C%E3%81%A6%E3%82%8B-　 ", inline=False)
 
     # ヘルプメッセージを送信します
     await interaction.response.send_message(embed=embed) # メッセージを隠す
