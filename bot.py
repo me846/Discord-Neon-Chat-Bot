@@ -342,6 +342,11 @@ async def on_voice_state_update(member, before, after):
             private_channels[after.channel.id] = private_channel
 
         await private_channel.set_permissions(member, read_messages=True)
+        
+        # botが入ってきた場合挨拶をしないよう
+        if not member.bot:
+            await send_greeting(member, private_channel)
+        
         await send_greeting(member, private_channel)
 
     elif before.channel and not after.channel:  # ユーザーがボイスチャンネルから退出した場合
