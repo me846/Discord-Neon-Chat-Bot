@@ -313,7 +313,9 @@ async def send_greeting(member, private_channel):
 # VC用プライベートチャンネル
 @client.event
 async def on_voice_state_update(member, before, after):
-    if after.channel and not before.channel:  # ユーザーがボイスチャンネルに参加した場合
+    if before.channel != after.channel:
+        if after.channel:  # ユーザーがボイスチャンネルに参加した場合
+            
         guild = after.channel.guild
         private_channel = private_channels.get(after.channel.id)
 
@@ -343,13 +345,13 @@ async def on_voice_state_update(member, before, after):
 
         await private_channel.set_permissions(member, read_messages=True)
         
-        # botが入ってきた場合挨拶をしないよう
+        # メンバーがボットでない場合にのみ挨拶を送信する
         if not member.bot:
             await send_greeting(member, private_channel)
         
         await send_greeting(member, private_channel)
 
-    elif before.channel and not after.channel:  # ユーザーがボイスチャンネルから退出した場合
+    if before.channel:  # ユーザーがボイスチャンネルから退出した場合
         private_channel = private_channels.get(before.channel.id)
         if private_channel:
             await private_channel.set_permissions(member, read_messages=False)
