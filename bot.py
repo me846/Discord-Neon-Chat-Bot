@@ -315,51 +315,48 @@ async def send_greeting(member, private_channel):
 async def on_voice_state_update(member, before, after):
     if before.channel != after.channel:
         if after.channel:  # ユーザーがボイスチャンネルに参加した場合
-            
-        guild = after.channel.guild
-        private_channel = private_channels.get(after.channel.id)
+            guild = after.channel.guild
+            private_channel = private_channels.get(after.channel.id)
 
-        if private_channel is None:
-            subadmin_role = discord.utils.get(guild.roles, name="sub_admin")
-            overwrites = {
-                guild.default_role: discord.PermissionOverwrite(read_messages=False),
-                guild.me: discord.PermissionOverwrite(read_messages=True),
-                member: discord.PermissionOverwrite(read_messages=True),
-                subadmin_role: discord.PermissionOverwrite(read_messages=True)
-            }
+            if private_channel is None:
+                subadmin_role = discord.utils.get(guild.roles, name="sub_admin")
+                overwrites = {
+                    guild.default_role: discord.PermissionOverwrite(read_messages=False),
+                    guild.me: discord.PermissionOverwrite(read_messages=True),
+                    member: discord.PermissionOverwrite(read_messages=True),
+                    subadmin_role: discord.PermissionOverwrite(read_messages=True)
+                }
 
-            # 同じ名前のテキストチャンネルが既に存在するかどうかを確認する
-            text_channel_name = after.channel.name
-            existing_channel = discord.utils.get(guild.text_channels, name=text_channel_name, category=after.channel.category)
+                # 同じ名前のテキストチャンネルが既に存在するかどうかを確認する
+                text_channel_name = after.channel.name
+                existing_channel = discord.utils.get(guild.text_channels, name=text_channel_name, category=after.channel.category)
 
-            if existing_channel:
-                private_channel = existing_channel
-            else:
-                private_channel = await guild.create_text_channel(
-                    name=text_channel_name,
-                    overwrites=overwrites,
-                    category=after.channel.category
-                )
+                if existing_channel:
+                    private_channel = existing_channel
+                else:
+                    private_channel = await guild.create_text_channel(
+                        name=text_channel_name,
+                        overwrites=overwrites,
+                        category=after.channel.category
+                    )
 
-            private_channels[after.channel.id] = private_channel
+                private_channels[after.channel.id] = private_channel
 
-        await private_channel.set_permissions(member, read_messages=True)
-        
-        # メンバーがボットでない場合にのみ挨拶を送信する
-        if not member.bot:
-            await send_greeting(member, private_channel)
-        
-        await send_greeting(member, private_channel)
+            await private_channel.set_permissions(member, read_messages=True)
 
-    if before.channel:  # ユーザーがボイスチャンネルから退出した場合
-        private_channel = private_channels.get(before.channel.id)
-        if private_channel:
-            await private_channel.set_permissions(member, read_messages=False)
+            # メンバーがボットでない場合にのみ挨拶を送信する
+            if not member.bot:
+                await send_greeting(member, private_channel)
 
-            # ボイスチャンネルに誰もいない場合は、チャットをクリアする
-            if len(before.channel.members) == 0:
-                async for message in private_channel.history(limit=50):
-                    await message.delete()
+        if before.channel:  # ユーザーがボイスチャンネルから退出した場合
+            private_channel = private_channels.get(before.channel.id)
+            if private_channel:
+                await private_channel.set_permissions(member, read_messages=False)
+
+                # ボイスチャンネルに誰もいない場合は、チャットをクリアする
+                if len(before.channel.members) == 0:
+                    async for message in private_channel.history(limit=50):
+                        await message.delete()
 
 # ヘルプコマンド
 @tree.command(name="help", description="このボットの使い方を表示します。")
