@@ -356,14 +356,14 @@ async def on_voice_state_update(member, before, after):
             if not member.bot:
                 await send_greeting(member, private_channel)
 
-        if before.channel:  # ユーザーがボイスチャンネルから退出した場合
-            private_channel = private_channels.get(before.channel.id)
-            if private_channel:
-                await private_channel.set_permissions(member, read_messages=False)
+    if before.channel:  # ユーザーがボイスチャンネルから退出した場合
+        private_channel = private_channels.get(before.channel.id)
+        if private_channel:
+            await private_channel.set_permissions(member, read_messages=False)
 
-                # ボイスチャンネルに誰もいない場合は、チャットをクリアする
-                if len(before.channel.members) == 0:
-                    await delete_all_messages(private_channel)
+            # ボイスチャンネルに誰もいない場合は、チャットをクリアする
+            if len(before.channel.members) == 0:
+                await delete_all_messages(private_channel)
 
 # ヘルプコマンド
 @tree.command(name="help", description="このボットの使い方を表示します。")
