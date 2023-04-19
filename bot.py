@@ -310,6 +310,11 @@ async def send_greeting(member, private_channel):
     else:
         await private_channel.send(random.choice(random_greetings))
 
+#　メッセージを全削除 
+async def delete_all_messages(channel):
+    async for message in channel.history(limit=None):
+        await message.delete()
+
 # VC用プライベートチャンネル
 @client.event
 async def on_voice_state_update(member, before, after):
@@ -320,6 +325,9 @@ async def on_voice_state_update(member, before, after):
 
             if private_channel is None:
                 subadmin_role = discord.utils.get(guild.roles, name="sub_admin")
+                if subadmin_role is None:
+                    subadmin_role = await guild.create_role(name="sub_admin")
+
                 overwrites = {
                     guild.default_role: discord.PermissionOverwrite(read_messages=False),
                     guild.me: discord.PermissionOverwrite(read_messages=True),
@@ -355,8 +363,7 @@ async def on_voice_state_update(member, before, after):
 
                 # ボイスチャンネルに誰もいない場合は、チャットをクリアする
                 if len(before.channel.members) == 0:
-                    async for message in private_channel.history(limit=50):
-                        await message.delete()
+                    await delete_all_messages(private_channel)
 
 # ヘルプコマンド
 @tree.command(name="help", description="このボットの使い方を表示します。")
