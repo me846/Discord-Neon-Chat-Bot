@@ -165,6 +165,7 @@ async def on_raw_reaction_add(payload):
         if payload.message_id == message.id:
             if str(payload.emoji) == "⏰":
                 embed = Embed(description=f"{time}に通知されます。", color=0x00FF00)
+                await interaction.response.send_message(embed=embed, ephemeral=True)  # メッセージを隠す
                 notify_message = await channel.send(payload.member.mention, embed=embed, allowed_mentions=discord.AllowedMentions.none())
                 users.append(payload.member.mention)
                 cancelled_messages.append(notify_message)
