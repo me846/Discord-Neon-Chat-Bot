@@ -221,6 +221,23 @@ async def remove_greeting(interaction: discord.Interaction, member_id: str, gree
     removed_greeting = greetings.pop(greeting_index)
     await interaction.response.send_message(f"{member_id} から挨拶を削除しました: {removed_greeting}", ephemeral=True)
 
+@tree.command(name="list_greetings", description="特定のメンバーの挨拶メッセージのリストを表示する")
+async def list_greetings(interaction: discord.Interaction, member_id: str):
+    # 管理者権限を確認
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message("このコマンドはサーバーの管理者のみが使用できます。", ephemeral=True)
+        return
+
+    # 特定のメンバーの挨拶メッセージがあるかどうかを確認
+    if member_id not in specific_member_greetings:
+        await interaction.response.send_message("このメンバーには挨拶メッセージがありません。", ephemeral=True)
+        return
+
+    # 挨拶メッセージのリストを表示
+    greetings_list = specific_member_greetings[member_id]
+    greetings_text = "\n".join([f"{index}: {greeting}" for index, greeting in enumerate(greetings_list)])
+    await interaction.response.send_message(f"挨拶メッセージのリスト（メンバーID: {member_id}）：\n{greetings_text}", ephemeral=True)
+
 #　メッセージを全削除 
 async def delete_all_messages(channel):
     async for message in channel.history(limit=None):
