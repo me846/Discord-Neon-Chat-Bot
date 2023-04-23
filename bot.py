@@ -136,29 +136,7 @@ async def notify():
 # メンバー入場時の挨拶
 async def send_greeting(member, private_channel):
     # 特定のメンバーのIDとメッセージを定義します
-    specific_members = {
-        # gacya
-        "218412882986008576": f"{member.mention} 魔王が来たぞ！皆逃げよ！",
-        "218412882986008576": f"{member.mention} 今日はナミが使えないでしょう",
-        "218412882986008576": f"{member.mention} 今日はジャンナが使えないでしょう",
-
-        # piko
-        "319163497822945300": f"{member.mention} 飛べない鳥は只の鳥だ",
-        "319163497822945300": f"{member.mention} 鳥の唐揚げ食す？",
-        
-        # shika
-        "318979735822663681": f"{member.mention} 東山動植物園は鹿を管理しておりません。おかえりください",
-        "318979735822663681": f"{member.mention} 貴方…。奈良公園から脱走してきたの?",
-        "318979735822663681": f"{member.mention} :poop:",
-
-        # gummy
-        "284985396545454091": f"{member.mention} :poop:",
-        "284985396545454091": f"{member.mention} スライムさんは転生者なんだ。大変だったね",
-        "284985396545454091": f"{member.mention} 初めまして！　俺はスライムのぐみ！”。悪いスライムじゃ無いよ！",
-
-        # miya
-        "611618187540168725": f"{member.mention} マスター！Vcチャットはこちらですよ！",
-        
+    specific_member_greetings = {
     }
 
     # ランダムな挨拶メッセージのリストを定義します
@@ -194,6 +172,28 @@ async def send_greeting(member, private_channel):
         await private_channel.send(specific_members[str(member.id)])
     else:
         await private_channel.send(random.choice(random_greetings))
+
+@tree.command(name="add_greeting", description="特定のメンバーに新しい挨拶を追加します")
+async def add_greeting(interaction: discord.Interaction, member_id: str, greeting: str):
+    if member_id not in specific_member_greetings:
+        specific_member_greetings[member_id] = []
+
+    specific_member_greetings[member_id].append(greeting)
+    await interaction.response.send_message(f"{member_id} に新しい挨拶を追加しました: {greeting}", ephemeral=True)
+
+@tree.command(name="remove_greeting", description="特定のメンバーから挨拶を削除します")
+async def remove_greeting(interaction: discord.Interaction, member_id: str, greeting_index: int):
+    if member_id not in specific_member_greetings:
+        await interaction.response.send_message(f"{member_id} には挨拶が登録されていません", ephemeral=True)
+        return
+
+    greetings = specific_member_greetings[member_id]
+    if greeting_index < 0 or greeting_index >= len(greetings):
+        await interaction.response.send_message(f"{member_id} の挨拶のインデックスが無効です。有効なインデックスを指定してください。", ephemeral=True)
+        return
+
+    removed_greeting = greetings.pop(greeting_index)
+    await interaction.response.send_message(f"{member_id} から挨拶を削除しました: {removed_greeting}", ephemeral=True)
 
 #　メッセージを全削除 
 async def delete_all_messages(channel):
