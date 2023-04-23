@@ -137,7 +137,29 @@ async def notify():
 async def send_greeting(member, private_channel):
     # 特定のメンバーのIDとメッセージを定義します
     specific_member_greetings = {
-    }
+    "218412882986008576": [
+        "{member.mention} 魔王が来たぞ！皆逃げよ！",
+        "{member.mention} 今日はナミが使えないでしょう",
+        "{member.mention} 今日はジャンナが使えないでしょう",
+    ],
+    "319163497822945300": [
+        "{member.mention} 飛べない鳥はただの鳥だ",
+        "{member.mention} 鳥の唐揚げ食す？",
+    ],
+    "318979735822663681": [
+        "{member.mention} 東山動植物園は鹿を管理しておりません。おかえりください",
+        "{member.mention} 貴方…。奈良公園から脱走してきたの?",
+        "{member.mention} :poop:",
+    ],
+    "284985396545454091": [
+        "{member.mention} :poop:",
+        "{member.mention} スライムさんは転生者なんだ。大変だったね",
+        "{member.mention} 初めまして！　俺はスライムのぐみ！”。悪いスライムじゃ無いよ！",
+    ],
+    "611618187540168725": [
+        "{member.mention} マスター！Vcチャットはこちらですよ！",
+    ],
+}
 
     # ランダムな挨拶メッセージのリストを定義します
     random_greetings = [
