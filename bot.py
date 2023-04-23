@@ -194,6 +194,10 @@ async def send_greeting(member, private_channel):
         f"{member.mention} ご来館いただき、誠にありがとうございます。どうぞお気軽にお入りください。",
         f"{member.mention} お越しいただき光栄でございます。どうぞお入りいただき、おくつろぎください。",
         ]
+        
+        # ランダムな挨拶メッセージを選択して送信します
+        chosen_greeting = random.choice(random_greetings)
+        await private_channel.send(chosen_greeting)
 
 @tree.command(name="add_greeting", description="特定のメンバーに新しい挨拶を追加します")
 async def add_greeting(interaction: discord.Interaction, member_id: str, greeting: str):
