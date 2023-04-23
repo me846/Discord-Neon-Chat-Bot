@@ -74,8 +74,7 @@ async def sub_admin_add(interaction: discord.Interaction, member: discord.Member
 async def delete_message(interaction: discord.Interaction, n: str):
     subadmin_role = discord.utils.get(interaction.guild.roles, name="sub_admin")
     if not (interaction.user.guild_permissions.administrator or (subadmin_role and subadmin_role in interaction.user.roles)):
-        embed = Embed(description="このコマンドはサーバーの管理者またはsub_admin役職のユーザーのみが使用できます。", color=0xFF0000)
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.send_message("***このコマンドはサーバーの管理者またはsub_admin役職のユーザーのみが使用できます。***", ephemeral=True)
         return
 
     await interaction.response.defer()
@@ -86,12 +85,11 @@ async def delete_message(interaction: discord.Interaction, n: str):
             if n < 1 or n > 100:
                 raise ValueError()
         except ValueError:
-            embed = Embed(description="削除するメッセージ数は1から100の範囲で指定してください。", color=0xFF0000)
-            await interaction.followup.send(embed=embed, ephemeral=True)
+            await interaction.followup.send("***削除するメッセージ数は1から100の範囲で指定してください。***", ephemeral=True)
             return
     else:
         # 確認メッセージ
-        confirm_message = await interaction.channel.send("本当に全てのメッセージを削除しますか？")
+        confirm_message = await interaction.channel.send("***本当に全てのメッセージを削除しますか？***")
         await confirm_message.add_reaction("✅")
         await confirm_message.add_reaction("❌")
 
@@ -126,8 +124,7 @@ async def delete_message(interaction: discord.Interaction, n: str):
         deleted_count += len(messages)
         await asyncio.sleep(1)  # レート制限に引っかからないように待機
 
-    embed = Embed(description=f"{deleted_count}個のメッセージを削除しました。", color=0x00FF00)
-    await interaction.channel.send(embed=embed)
+    await interaction.channel.send(f"```{deleted_count}個のメッセージを削除しました。```")
 
 
 
