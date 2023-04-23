@@ -192,7 +192,7 @@ async def set_time_and_comment(interaction: discord.Interaction, time: str, comm
     embed = Embed(description=f"{time}に{comment}が予定されました！リアクションボタンを押してください。",
                   color=0x00FF00,
                   timestamp=datetime.utcnow())
-    embed.set_footer(text=f"予定者: {interaction.user.display_name}", icon_url=interaction.user.avatar_url)
+    embed.set_footer(text=f"予定者: {interaction.member.display_name}", icon_url=interaction.member.avatar_url)
     message = await channel.send(embed=embed)
     message_id = message.id
     message_data[message_id] = (time, comment, message, [], False, [], interaction.user)
