@@ -5,6 +5,7 @@ import asyncio
 import random
 import asyncio
 import pytz
+import json
 from discord.ext import tasks
 from discord import app_commands
 from discord import Embed
@@ -29,6 +30,21 @@ message_data = {}
 private_channels = {}
 sub_admin_roles = defaultdict(lambda: None)
 
+# 挨拶を保存
+def save_greetings(greetings):
+    with open("greetings.json", "w", encoding="utf-8") as f:
+        json.dump(greetings, f, ensure_ascii=False, indent=2)
+
+# 挨拶を読み込み
+def load_greetings():
+    try:
+        with open("greetings.json", "r", encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
+
+# 起動時に読み込む
+specific_member_greetings = load_greetings()
 
 @client.event
 async def on_ready():
@@ -204,7 +220,8 @@ async def add_greeting(interaction: discord.Interaction, member_id: str, greetin
     if member_id not in specific_member_greetings:
         specific_member_greetings[member_id] = []
 
-    specific_member_greetings[member_id].append(greeting)
+    specific_member_greetings.setdefault(member_id, []).append(greeting)
+    save_greetings(specific_member_greetings)
     await interaction.response.send_message(f"{member_id} に新しい挨拶を追加しました: {greeting}", ephemeral=True)
 
 @tree.command(name="remove_greeting", description="特定のメンバーから挨拶を削除します")
@@ -218,7 +235,8 @@ async def remove_greeting(interaction: discord.Interaction, member_id: str, gree
         await interaction.response.send_message(f"{member_id} の挨拶のインデックスが無効です。有効なインデックスを指定してください。", ephemeral=True)
         return
 
-    removed_greeting = greetings.pop(greeting_index)
+    specific_member_greetings[member_id].pop(index)
+    save_greetings(specific_member_greetings)
     await interaction.response.send_message(f"{member_id} から挨拶を削除しました: {removed_greeting}", ephemeral=True)
 
 @tree.command(name="list_greetings", description="特定のメンバーの挨拶メッセージのリストを表示する")
