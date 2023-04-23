@@ -74,7 +74,8 @@ async def sub_admin_add(interaction: discord.Interaction, member: discord.Member
 async def delete_message(interaction: discord.Interaction, n: str):
     subadmin_role = discord.utils.get(interaction.guild.roles, name="sub_admin")
     if not (interaction.user.guild_permissions.administrator or (subadmin_role and subadmin_role in interaction.user.roles)):
-        await interaction.response.send_message("このコマンドはサーバーの管理者またはsub_admin役職のユーザーのみが使用できます。", ephemeral=True)
+        embed = Embed(description="このコマンドはサーバーの管理者またはsub_admin役職のユーザーのみが使用できます。", color=0xFF0000)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
         return
 
     await interaction.response.defer()
@@ -85,7 +86,8 @@ async def delete_message(interaction: discord.Interaction, n: str):
             if n < 1 or n > 100:
                 raise ValueError()
         except ValueError:
-            await interaction.followup.send("削除するメッセージ数は1から100の範囲で指定してください。", ephemeral=True)
+            embed = Embed(description="削除するメッセージ数は1から100の範囲で指定してください。", color=0xFF0000)
+            await interaction.followup.send(embed=embed, ephemeral=True)
             return
     else:
         # 確認メッセージ
@@ -124,7 +126,8 @@ async def delete_message(interaction: discord.Interaction, n: str):
         deleted_count += len(messages)
         await asyncio.sleep(1)  # レート制限に引っかからないように待機
 
-    await interaction.channel.send(f"{deleted_count}個のメッセージを削除しました。")
+    embed = Embed(description=f"{deleted_count}個のメッセージを削除しました。", color=0x00FF00)
+    await interaction.channel.send(embed=embed)
 
 
 
@@ -165,7 +168,7 @@ async def on_raw_reaction_add(payload):
         if payload.message_id == message.id:
             if str(payload.emoji) == "⏰":
                 embed = Embed(description=f"{time}に通知されます。", color=0x00FF00)
-                await interaction.response.send_message(embed=embed, ephemeral=True)  # メッセージを隠す
+                notify_message = await channel.send(payload.member.mention, embed=embed, ephemeral=True)  # ephemeral=True を追加
                 notify_message = await channel.send(payload.member.mention, embed=embed, allowed_mentions=discord.AllowedMentions.none())
                 users.append(payload.member.mention)
                 cancelled_messages.append(notify_message)
