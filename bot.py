@@ -168,7 +168,7 @@ async def on_raw_reaction_add(payload):
         if payload.message_id == message.id:
             if str(payload.emoji) == "⏰":
                 embed = Embed(description=f"{time}に通知されます。", color=0x00FF00)
-                notify_message = await channel.send(f"{payload.member.mention}", embed=embed) 
+                notify_message = await channel.send(f"{payload.member.mention}", embed=embed)
                 users.append(payload.member.mention)
                 cancelled_messages.append(notify_message)
                 message_data[message_id] = (time, comment, message, users, cancelled, cancelled_messages, author)
@@ -177,8 +177,8 @@ async def on_raw_reaction_add(payload):
                 delete_after = 5  # 5秒後に削除する
                 await asyncio.sleep(delete_after)
                 await notify_message.delete()
-                elif str(payload.emoji) == "❌" and payload.member == author:
                 
+            elif str(payload.emoji) == "❌" and payload.member == author:
                 if not cancelled:
                     embed = Embed(description="予定をキャンセルされました", color=0xFF0000)
                     await message.reply(embed=embed)  # メッセージに直接返信
