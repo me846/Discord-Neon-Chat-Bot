@@ -74,7 +74,7 @@ async def sub_admin_add(interaction: discord.Interaction, member: discord.Member
 async def delete_message(interaction: discord.Interaction, n: str):
     subadmin_role = discord.utils.get(interaction.guild.roles, name="sub_admin")
     if not (interaction.user.guild_permissions.administrator or (subadmin_role and subadmin_role in interaction.user.roles)):
-        await interaction.response.send_message("***このコマンドはサーバーの管理者またはsub_admin役職のユーザーのみが使用できます。***", ephemeral=True)
+        await interaction.response.send_message("このコマンドはサーバーの管理者またはsub_admin役職のユーザーのみが使用できます。", ephemeral=True)
         return
 
     await interaction.response.defer()
@@ -85,11 +85,11 @@ async def delete_message(interaction: discord.Interaction, n: str):
             if n < 1 or n > 100:
                 raise ValueError()
         except ValueError:
-            await interaction.followup.send("***削除するメッセージ数は1から100の範囲で指定してください。***", ephemeral=True)
+            await interaction.followup.send("削除するメッセージ数は1から100の範囲で指定してください。", ephemeral=True)
             return
     else:
         # 確認メッセージ
-        confirm_message = await interaction.channel.send("***本当に全てのメッセージを削除しますか？***")
+        confirm_message = await interaction.channel.send("本当に全てのメッセージを削除しますか？")
         await confirm_message.add_reaction("✅")
         await confirm_message.add_reaction("❌")
 
@@ -124,7 +124,61 @@ async def delete_message(interaction: discord.Interaction, n: str):
         deleted_count += len(messages)
         await asyncio.sleep(1)  # レート制限に引っかからないように待機
 
-    await interaction.channel.send(f"```{deleted_count}個のメッセージを削除しました。```")
+    await interaction.channel.send(f"{deleted_count}個のメッセージを削除しました。")@tree.command(name="delete_message", description="指定された数のメッセージを削除する")
+async def delete_message(interaction: discord.Interaction, n: str):
+    subadmin_role = discord.utils.get(interaction.guild.roles, name="sub_admin")
+    if not (interaction.user.guild_permissions.administrator or (subadmin_role and subadmin_role in interaction.user.roles)):
+        await interaction.response.send_message("このコマンドはサーバーの管理者またはsub_admin役職のユーザーのみが使用できます。", ephemeral=True)
+        return
+
+    await interaction.response.defer()
+
+    if n != "all":
+        try:
+            n = int(n)
+            if n < 1 or n > 100:
+                raise ValueError()
+        except ValueError:
+            await interaction.followup.send("削除するメッセージ数は1から100の範囲で指定してください。", ephemeral=True)
+            return
+    else:
+        # 確認メッセージ
+        confirm_message = await interaction.channel.send("本当に全てのメッセージを削除しますか？")
+        await confirm_message.add_reaction("✅")
+        await confirm_message.add_reaction("❌")
+
+        def check(reaction, user):
+            return user == interaction.user and str(reaction.emoji) in ["✅", "❌"] and reaction.message.id == confirm_message.id
+
+        try:
+            reaction, _ = await interaction.client.wait_for("reaction_add", timeout=60.0, check=check)
+        except asyncio.TimeoutError:
+            await confirm_message.delete()
+            return
+
+        if str(reaction.emoji) == "❌":
+            await confirm_message.delete()
+            return
+
+        await confirm_message.delete()
+
+    deleted_count = 0
+    original_message_id = interaction.data["id"]
+    is_all = n == "all"
+
+    while is_all or deleted_count < n:
+        limit = 50 if is_all else min(n - deleted_count, 50)
+        messages = []
+        async for message in interaction.channel.history(limit=limit):
+            if message.id != original_message_id:  # オリジナルのメッセージは削除しない
+                messages.append(message)
+        if not messages:
+            break
+        await interaction.channel.delete_messages(messages)
+        deleted_count += len(messages)
+        await asyncio.sleep(1)  # レート制限に引っかからないように待機
+
+    await interaction.channel.send(f"{deleted_count}個のメッセージを削除しました。")
 
 
 
