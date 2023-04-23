@@ -133,10 +133,8 @@ async def notify():
         await asyncio.sleep(1)  # 1秒毎にチェック
 
 
-# メンバー入場時の挨拶
-async def send_greeting(member, private_channel):
-    # 特定のメンバーのIDとメッセージを定義します
-    specific_member_greetings = {
+# 特定のメンバーのIDとメッセージを定義
+specific_member_greetings = {
     "218412882986008576": [
         "{member.mention} 魔王が来たぞ！皆逃げよ！",
         "{member.mention} 今日はナミが使えないでしょう",
@@ -161,8 +159,16 @@ async def send_greeting(member, private_channel):
     ],
 }
 
-    # ランダムな挨拶メッセージのリストを定義します
-    random_greetings = [
+async def send_greeting(member, private_channel):
+    if str(member.id) in specific_member_greetings:
+        greeting_options = specific_member_greetings[str(member.id)]
+        chosen_greeting = random.choice(greeting_options)
+        greeting_message = chosen_greeting.format(member=member)
+        await private_channel.send(greeting_message)
+    else:
+        # 通常の挨拶メッセージはランダムなメッセージを送るようになっています
+        # ランダムな挨拶メッセージのリストを定義します
+        random_greetings = [
         # デフォ
         f"{member.mention} VCチャットはこっちだよ！",
         # お嬢様
@@ -187,13 +193,7 @@ async def send_greeting(member, private_channel):
         f"{member.mention} いらっしゃいませ、お客様。こちらへどうぞお進みいただき、おくつろぎいただければと存じます。",
         f"{member.mention} ご来館いただき、誠にありがとうございます。どうぞお気軽にお入りください。",
         f"{member.mention} お越しいただき光栄でございます。どうぞお入りいただき、おくつろぎください。",
-    ]
-
-    # 特定のメンバーに対してメッセージを送信するか、ランダムなメッセージを送信します
-    if str(member.id) in specific_members:
-        await private_channel.send(specific_members[str(member.id)])
-    else:
-        await private_channel.send(random.choice(random_greetings))
+        ]
 
 @tree.command(name="add_greeting", description="特定のメンバーに新しい挨拶を追加します")
 async def add_greeting(interaction: discord.Interaction, member_id: str, greeting: str):
