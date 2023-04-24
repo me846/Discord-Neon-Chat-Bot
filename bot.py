@@ -176,13 +176,13 @@ specific_member_greetings = {
 }
 
 async def send_greeting(member, private_channel):
-    if str(member.id) in specific_member_greetings:
-        greeting_options = specific_member_greetings[str(member.id)]
-        chosen_greeting = random.choice(greeting_options)
-        greeting_message = chosen_greeting.format(member=member)
-        await private_channel.send(greeting_message)
+    specific_member_greetings = load_greetings()
+    member_id = str(member.id)
+
+    if member_id in specific_member_greetings:
+        greetings = specific_member_greetings[member_id]
+        greeting = random.choice(greetings)
     else:
-        # 通常の挨拶メッセージはランダムなメッセージを送るようになっています
         # ランダムな挨拶メッセージのリストを定義します
         random_greetings = [
         # デフォ
@@ -210,10 +210,9 @@ async def send_greeting(member, private_channel):
         f"{member.mention} ご来館いただき、誠にありがとうございます。どうぞお気軽にお入りください。",
         f"{member.mention} お越しいただき光栄でございます。どうぞお入りいただき、おくつろぎください。",
         ]
-        
-        # ランダムな挨拶メッセージを選択して送信します
-        chosen_greeting = random.choice(random_greetings)
-        await private_channel.send(chosen_greeting)
+        greeting = random.choice(random_greetings)
+    
+    await private_channel.send(greeting)
 
 @tree.command(name="remove_greeting", description="特定のメンバーに対する挨拶を削除します")
 async def remove_greeting(interaction: discord.Interaction, user: discord.User, index: int):
