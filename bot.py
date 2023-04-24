@@ -214,8 +214,8 @@ async def send_greeting(member, private_channel):
     
     await private_channel.send(greeting)
 
+
 @tree.command(
-    n@tree.command(
     name="add_greeting",
     description="特定のメンバーに対する挨拶を追加します"
 )
