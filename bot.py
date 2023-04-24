@@ -215,29 +215,46 @@ async def send_greeting(member, private_channel):
         chosen_greeting = random.choice(random_greetings)
         await private_channel.send(chosen_greeting)
 
-@tree.command(name="add_greeting", description="特定のメンバーに新しい挨拶を追加します")
-async def add_greeting(interaction: discord.Interaction, member_id: str, greeting: str):
-    if member_id not in specific_member_greetings:
-        specific_member_greetings[member_id] = []
-
-    specific_member_greetings.setdefault(member_id, []).append(greeting)
-    save_greetings(specific_member_greetings)
-    await interaction.response.send_message(f"{member_id} に新しい挨拶を追加しました: {greeting}", ephemeral=True)
-
-@tree.command(name="remove_greeting", description="特定のメンバーから挨拶を削除します")
-async def remove_greeting(interaction: discord.Interaction, member_id: str, greeting_index: int):
-    if member_id not in specific_member_greetings:
-        await interaction.response.send_message(f"{member_id} には挨拶が登録されていません", ephemeral=True)
+@tree.command(name="remove_greeting", description="特定のメンバーに対する挨拶を削除します")
+async def remove_greeting(interaction: discord.Interaction, user: discord.User, index: int):
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message("このコマンドはサーバーの管理者のみが使用できます。", ephemeral=True)
         return
 
-    greetings = specific_member_greetings[member_id]
-    if greeting_index < 0 or greeting_index >= len(greetings):
-        await interaction.response.send_message(f"{member_id} の挨拶のインデックスが無効です。有効なインデックスを指定してください。", ephemeral=True)
+    specific_member_greetings = load_greetings()
+
+    if str(user.id) not in specific_member_greetings:
+        await interaction.response.send_message(f"{user.display_name} に対する特定の挨拶はありません。", ephemeral=True)
         return
 
-    specific_member_greetings[member_id].pop(index)
+    greetings = specific_member_greetings[str(user.id)]
+
+    if index <= 0 or index > len(greetings):
+        await interaction.response.send_message("指定されたインデックスが無効です。", ephemeral=True)
+        return
+
+    removed_greeting = greetings.pop(index - 1)
     save_greetings(specific_member_greetings)
-    await interaction.response.send_message(f"{member_id} から挨拶を削除しました: {removed_greeting}", ephemeral=True)
+
+    await interaction.response.send_message(f"次の挨拶を削除しました: {removed_greeting}", ephemeral=True)
+
+
+@tree.command(name="add_greeting", description="特定のメンバーに対する挨拶を追加します")
+async def add_greeting(interaction: discord.Interaction, user: discord.User, greeting: str):
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message("このコマンドはサーバーの管理者のみが使用できます。", ephemeral=True)
+        return
+
+    specific_member_greetings = load_greetings()
+
+    if str(user.id) not in specific_member_greetings:
+        specific_member_greetings[str(user.id)] = []
+
+    specific_member_greetings[str(user.id)].append(greeting)
+    save_greetings(specific_member_greetings)
+
+    await interaction.response.send_message(f"次の挨拶を追加しました: {greeting}", ephemeral=True)
+
     
 @tree.command(name="list_greetings", description="特定のメンバーに対する挨拶のリストを表示します")
 async def list_greetings(interaction: discord.Interaction, user: discord.User):
