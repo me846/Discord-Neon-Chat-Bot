@@ -240,25 +240,21 @@ async def remove_greeting(interaction: discord.Interaction, member_id: str, gree
     await interaction.response.send_message(f"{member_id} から挨拶を削除しました: {removed_greeting}", ephemeral=True)
     
 @tree.command(name="list_greetings", description="特定のメンバーに対する挨拶のリストを表示します")
-async def list_greetings(interaction: discord.Interaction):
+async def list_greetings(interaction: discord.Interaction, user: discord.User):
     if not interaction.user.guild_permissions.administrator:
         await interaction.response.send_message("このコマンドはサーバーの管理者のみが使用できます。", ephemeral=True)
         return
 
     specific_member_greetings = load_greetings()
 
-    if not specific_member_greetings:
-        await interaction.response.send_message("現在、特定のメンバーに対する挨拶はありません。", ephemeral=True)
+    if str(user.id) not in specific_member_greetings:
+        await interaction.response.send_message(f"{user.display_name} に対する特定の挨拶はありません。", ephemeral=True)
         return
 
-    response_message = "特定のメンバーに対する挨拶のリスト:\n\n"
-    for user_id, greetings in specific_member_greetings.items():
-        member = interaction.guild.get_member(int(user_id))
-        if member:
-            response_message += f"{member.display_name}:\n"
-            for index, greeting in enumerate(greetings, start=1):
-                response_message += f"{index}. {greeting}\n"
-            response_message += "\n"
+    response_message = f"{user.display_name} に対する挨拶のリスト:\n\n"
+    greetings = specific_member_greetings[str(user.id)]
+    for index, greeting in enumerate(greetings, start=1):
+        response_message += f"{index}. {greeting}\n"
 
     await interaction.response.send_message(response_message, ephemeral=True)
 
