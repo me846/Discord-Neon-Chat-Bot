@@ -215,6 +215,7 @@ async def send_greeting(member, private_channel):
     await private_channel.send(greeting)
 
 @tree.command(
+    n@tree.command(
     name="add_greeting",
     description="特定のメンバーに対する挨拶を追加します"
 )
@@ -227,7 +228,13 @@ async def _add_greeting(ctx, member: discord.Member, greeting: str):
 
     specific_member_greetings[member_id].append(greeting)
     save_greetings(specific_member_greetings)
-    await ctx.response.send_message(f"挨拶を追加しました: {member.mention}: {greeting}")
+
+    embed = Embed(
+        title="挨拶を追加しました",
+        description=f"{member.mention}: {greeting}",
+        color=0x00FF00
+    )
+    await ctx.response.send_message(embed=embed)
 
 @tree.command(
     name="remove_greeting",
@@ -238,7 +245,12 @@ async def _remove_greeting(ctx, member: discord.Member, index: int):
     member_id = str(member.id)
 
     if member_id not in specific_member_greetings:
-        await ctx.response.send_message("このメンバーには追加された挨拶がありません。")
+        embed = Embed(
+            title="エラー",
+            description="このメンバーには追加された挨拶がありません。",
+            color=0xFF0000
+        )
+        await ctx.response.send_message(embed=embed)
         return
 
     greetings = specific_member_greetings[member_id]
@@ -246,29 +258,46 @@ async def _remove_greeting(ctx, member: discord.Member, index: int):
     if 0 <= index < len(greetings):
         removed_greeting = greetings.pop(index)
         save_greetings(specific_member_greetings)
-        await ctx.response.send_message(f"削除された挨拶: {member.mention}: {removed_greeting}")
+        embed = Embed(
+            title="削除された挨拶",
+            description=f"{member.mention}: {removed_greeting}",
+            color=0xFF0000
+        )
+        await ctx.response.send_message(embed=embed)
     else:
-        await ctx.response.send_message("無効なインデックスです。`/list_greetings` を使って正しいインデックスを確認してください。")
-
+        embed = Embed(
+            title="エラー",
+            description="無効なインデックスです。`/list_greetings` を使って正しいインデックスを確認してください。",
+            color=0xFF0000
+        )
+        await ctx.response.send_message(embed=embed)
     
-@tree.command(name="list_greetings", description="特定のメンバーに対する挨拶のリストを表示します")
-async def list_greetings(interaction: discord.Interaction, user: discord.User):
-    if not interaction.user.guild_permissions.administrator:
-        await interaction.response.send_message("このコマンドはサーバーの管理者のみが使用できます。", ephemeral=True)
-        return
-
+@tree.command(
+    name="list_greetings",
+    description="特定のメンバーに対する挨拶のリストを表示します"
+)
+async def _list_greetings(ctx, member: discord.Member):
     specific_member_greetings = load_greetings()
+    member_id = str(member.id)
 
-    if str(user.id) not in specific_member_greetings:
-        await interaction.response.send_message(f"{user.display_name} に対する特定の挨拶はありません。", ephemeral=True)
+    if member_id not in specific_member_greetings or not specific_member_greetings[member_id]:
+        embed = Embed(
+            title="エラー",
+            description="このメンバーには追加された挨拶がありません。",
+            color=0xFF0000
+        )
+        await ctx.response.send_message(embed=embed)
         return
 
-    response_message = f"{user.display_name} に対する挨拶のリスト:\n\n"
-    greetings = specific_member_greetings[str(user.id)]
-    for index, greeting in enumerate(greetings, start=1):
-        response_message += f"{index}. {greeting}\n"
+    greetings = specific_member_greetings[member_id]
+    greetings_list = "\n".join(f"{idx}: {greeting}" for idx, greeting in enumerate(greetings))
 
-    await interaction.response.send_message(response_message, ephemeral=True)
+    embed = Embed(
+        title=f"{member.name} に対する挨拶のリスト",
+        description=greetings_list,
+        color=0x00FF00
+    )
+    await ctx.response.send_message(embed=embed)
 
 #　メッセージを全削除 
 async def delete_all_messages(channel):
