@@ -227,7 +227,7 @@ async def _add_greeting(ctx, member: discord.Member, greeting: str):
 
     specific_member_greetings[member_id].append(greeting)
     save_greetings(specific_member_greetings)
-    await ctx.send(f"挨拶を追加しました: {member.mention}: {greeting}")
+    await ctx.response.send_message(f"挨拶を追加しました: {member.mention}: {greeting}")
 
 @tree.command(
     name="remove_greeting",
@@ -238,7 +238,7 @@ async def _remove_greeting(ctx, member: discord.Member, index: int):
     member_id = str(member.id)
 
     if member_id not in specific_member_greetings:
-        await ctx.send("このメンバーには追加された挨拶がありません。")
+        await ctx.response.send_message("このメンバーには追加された挨拶がありません。")
         return
 
     greetings = specific_member_greetings[member_id]
@@ -246,9 +246,9 @@ async def _remove_greeting(ctx, member: discord.Member, index: int):
     if 0 <= index < len(greetings):
         removed_greeting = greetings.pop(index)
         save_greetings(specific_member_greetings)
-        await ctx.send(f"削除された挨拶: {member.mention}: {removed_greeting}")
+        await ctx.response.send_message(f"削除された挨拶: {member.mention}: {removed_greeting}")
     else:
-        await ctx.send("無効なインデックスです。`/list_greetings` を使って正しいインデックスを確認してください。")
+        await ctx.response.send_message("無効なインデックスです。`/list_greetings` を使って正しいインデックスを確認してください。")
 
     
 @tree.command(name="list_greetings", description="特定のメンバーに対する挨拶のリストを表示します")
