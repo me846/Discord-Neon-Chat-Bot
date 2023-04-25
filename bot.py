@@ -369,7 +369,7 @@ async def help_command(interaction: discord.Interaction):
     embed.add_field(name="ボイスチャンネルへの参加/退出", value="ボイスチャンネルに参加すると、専用のプライベートテキストチャンネルが作成されます。ボイスチャンネルから退出すると、そのテキストチャンネルへのアクセスが解除されます。全員が退出するとプライベートチャンネル内のチャットは削除されます。*1", inline=False)
     embed.add_field(name="入場時の挨拶", value="ユーザーがボイスチャンネルに入ると、ボットが設定された挨拶メッセージを送信します。個別のメンバーに対してカスタム挨拶メッセージを設定することができます。", inline=False)
     embed.add_field(name="/add_greeting <member> <greeting>", value="特定のメンバーに対する挨拶を追加します。メンバーは@メンションまたはユーザーIDで指定できます。例: `/add_greeting @username こんにちは、ようこそ！`", inline=False)
-    embed.add_field(name="/remove_greeting <member> <index>", value="特定のメンバーに対する挨拶を削除します。\nindexに削除する番号をlistから調べて入力してください。\nメンションは付いていません各自で設定してください。", inline=False)
+    embed.add_field(name="/remove_greeting <member> <index>", value="特定のメンバーに対する挨拶を削除します。\nindexに削除する番号をlistから調べて入力してください。", inline=False)
     embed.add_field(name="/list_greetings <member>", value="特定のメンバーに対する挨拶のリストを表示します。", inline=False)
    
     embed.add_field(name="*1", value="APIレートが制限された場合、最小限の動作になります。\n詳しくはhttps://support-dev.discord.com/hc/ja/articles/6223003921559-%E7%A7%81%E3%81%AEBot%E3%81%8C%E3%83%AC%E3%83%BC%E3%83%88%E5%88%B6%E9%99%90%E3%81%95%E3%82%8C%E3%81%A6%E3%82%8B-　 ", inline=False)
