@@ -366,11 +366,13 @@ async def help_command(interaction: discord.Interaction):
     embed = discord.Embed(title="ボットの使い方", color=discord.Color.blue())
 
     embed.add_field(name="/time_add_comment <time> <comment>", value="指定した時刻とコメントで通知を設定します。\n例: `/time_add_comment 14:30 会議が始まります。`", inline=False)
-    embed.add_field(name="ボイスチャンネルへの参加/退出", value="ボイスチャンネルに参加すると、専用のプライベートテキストチャンネルが作成されます。ボイスチャンネルから退出すると、そのテキストチャンネルへのアクセスが解除されます。全員が退出するとプライベートチャンネル内のチャットは削除されます。*2", inline=False)
-    embed.add_field(name="*1", value="サブ管理者は管理者以外に/delete_messageを使うために必要な権限です。今後この権限を使ったコマンドを実装予定です", inline=False)
-    embed.add_field(name="*2", value="APIレートが制限された場合、最小限の動作になります。/n詳しくはhttps://support-dev.discord.com/hc/ja/articles/6223003921559-%E7%A7%81%E3%81%AEBot%E3%81%8C%E3%83%AC%E3%83%BC%E3%83%88%E5%88%B6%E9%99%90%E3%81%95%E3%82%8C%E3%81%A6%E3%82%8B-　 ", inline=False)
-
-    # ヘルプメッセージを送信します
+    embed.add_field(name="ボイスチャンネルへの参加/退出", value="ボイスチャンネルに参加すると、専用のプライベートテキストチャンネルが作成されます。ボイスチャンネルから退出すると、そのテキストチャンネルへのアクセスが解除されます。全員が退出するとプライベートチャンネル内のチャットは削除されます。*1", inline=False)
+    embed.add_field(name="/add_greeting <member> <greeting>", value="特定のメンバーに対する挨拶を追加します。", inline=False)
+    embed.add_field(name="/remove_greeting <member> <index>", value="特定のメンバーに対する挨拶を削除します。indexに削除する番号をlistから調べて入力してください。", inline=False)
+    embed.add_field(name="/list_greetings <member>", value="特定のメンバーに対する挨拶のリストを表示します。", inline=False)
+    embed.add_field(name="*1", value="APIレートが制限された場合、最小限の動作になります。/n詳しくはhttps://support-dev.discord.com/hc/ja/articles/6223003921559-%E7%A7%81%E3%81%AEBot%E3%81%8C%E3%83%AC%E3%83%BC%E3%83%88%E5%88%B6%E9%99%90%E3%81%95%E3%82%8C%E3%81%A6%E3%82%8B-　 ", inline=False)
+    
+# ヘルプメッセージを送信します
     await interaction.response.send_message(embed=embed) # メッセージを隠す
 
 client.run(TOKEN)
