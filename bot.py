@@ -385,6 +385,7 @@ async def on_voice_state_update(member, before, after):
 
             # ボイスチャンネルに誰もいない場合は、チャットをクリアする
             if len(before.channel.members) == 0:
+                await asyncio.sleep(1)  # やや遅延を入れる
                 await private_channel.purge(limit=50)
 
 # ヘルプコマンド
