@@ -385,11 +385,7 @@ async def on_voice_state_update(member, before, after):
 
             # ボイスチャンネルに誰もいない場合は、チャットをクリアする
             if len(before.channel.members) == 0:
-                async for message in private_channel.history(limit=50):
-                    try:
-                        await message.delete()
-                    except discord.errors.NotFound:
-                        pass  # メッセージが既に削除されている場合は無視する
+                await private_channel.purge(limit=50)
 
 # ヘルプコマンド
 @tree.command(name="help", description="このボットの使い方を表示します。")
