@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
+BOT_OWNER_ID = int(os.getenv("BOT_OWNER_ID"))
 
 intents = discord.Intents.default()
 intents.voice_states = True
@@ -62,7 +63,37 @@ async def on_ready():
                 if text_channel:
                     private_channels[voice_channel.id] = text_channel
 
+# interaction.user.idとBOT_OWNER_IDを比較
+async def announcement(interaction: discord.Interaction, *, content: str):
+    if interaction.user.id != BOT_OWNER_ID:
+        await interaction.response.send_message("このコマンドはBot管理者のみが使用できます。", ephemeral=True)
+        return
 
+# アナウンス
+@tree.command(
+    name="announcement",
+    description="Bot管理者がサーバー全体にお知らせを送信します。",
+)
+async def announcement(interaction: discord.Interaction, *, content: str):
+    if interaction.user.id != bot.owner_id:
+        await interaction.response.send_message("このコマンドはBot管理者のみが使用できます。", ephemeral=True)
+        return
+
+    for guild in bot.guilds:
+        # デフォルトのテキストチャンネルを見つける
+        default_channel = None
+        for channel in guild.text_channels:
+            if channel.permissions_for(guild.me).send_messages:
+                default_channel = channel
+                break
+
+        if default_channel is not None:
+            await default_channel.send(content)
+        else:
+            print(f"Could not find a suitable channel to send the announcement in {guild.name}")
+
+    await interaction.response.send_message("お知らせが送信されました。", ephemeral=True)
+    
 # ここから予定投票、及び通知コード
 @tree.command(name="time_add_comment", description="通知のために時間とコメントを設定してください")
 async def set_time_and_comment(interaction: discord.Interaction, time: str, comment: str):
