@@ -360,18 +360,18 @@ async def on_voice_state_update(member, before, after):
     if before.channel:  # ユーザーがボイスチャンネルから退出した場合
         private_channel = private_channels.get(before.channel.id)
         if private_channel:
-            # メンバーがボットでない場合にのみ、権限をリセットする
-            if not member.bot:
-                await private_channel.set_permissions(member, read_messages=None)
-
             # ボイスチャンネルに誰もいない場合は、チャットをクリアする
             if len(before.channel.members) == 0:
                 await asyncio.sleep(1)  # やや遅延を入れる
                 await private_channel.purge(limit=50)
 
-                # ボットの権限をリセットしないように条件を追加する
-                if not member.bot:
-                    await private_channel.set_permissions(client.user, read_messages=None)
+            # メンバーがボットでない場合にのみ、権限をリセットする
+            if not member.bot:
+                await private_channel.set_permissions(member, read_messages=None)
+
+            # ボットがボイスチャンネルから退出した場合、ボットの権限をリセットしない
+            if not (before.channel == after.channel and member.bot):
+                await private_channel.set_permissions(client.user, read_messages=None)
 
 # ヘルプコマンド
 @tree.command(name="help", description="このボットの使い方を表示します。")
