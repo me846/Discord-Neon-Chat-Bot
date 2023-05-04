@@ -369,6 +369,10 @@ async def on_voice_state_update(member, before, after):
                 await asyncio.sleep(1)  # やや遅延を入れる
                 await private_channel.purge(limit=50)
 
+                # ボットの権限をリセットしないように条件を追加する
+                if not member.bot:
+                    await private_channel.set_permissions(client.user, read_messages=None)
+
 # ヘルプコマンド
 @tree.command(name="help", description="このボットの使い方を表示します。")
 async def help_command(interaction: discord.Interaction):
