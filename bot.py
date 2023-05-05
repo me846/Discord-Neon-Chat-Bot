@@ -181,7 +181,7 @@ async def send_greeting(member, private_channel):
         # 天然
         f"{member.mention} あら、ここに来たのね。どうぞ、どうぞ、お入りなさい。",
         f"{member.mention} わあ、来てくれたんだね。どうぞ、お気軽にお入りください。",
-        f"{member.mention} Vわあ、来てくれたんだね。どうぞ、お気軽にお入りください。",
+        f"{member.mention} わあ、来てくれたんだね。どうぞ、お気軽にお入りください。",
         # 中二病
         f"{member.mention} 闇の扉を叩いた者よ、我が領域への侵入を許可する。",
         f"{member.mention} おお、来たるべき者が現れたか。さあ、我が深淵へ進め！",
