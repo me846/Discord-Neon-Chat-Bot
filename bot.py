@@ -106,18 +106,18 @@ async def on_raw_reaction_add(payload):
                 cancelled_messages.append(notify_message)
                 message_data[message_id] = (time, comment, message, users, cancelled, cancelled_messages, author)
                 
-                # メッセージを数秒後に削除
-                delete_after = 5  # 5秒後に削除する
+                
+                delete_after = 3
                 await asyncio.sleep(delete_after)
                 await notify_message.delete()
                 
             elif str(payload.emoji) == "❌" and payload.member == author:
                 if not cancelled:
                     embed = Embed(description="予定をキャンセルされました", color=0xFF0000)
-                    await message.reply(embed=embed)  # メッセージに直接返信
+                    await message.reply(embed=embed)
                     for msg in cancelled_messages:
-                        await msg.delete()  # メッセージを削除
-                    await message.clear_reactions()  # リアクションを全削除
+                        await msg.delete()
+                    await message.clear_reactions()
                     message_data[message_id] = (time, comment, message, users, True, [], author)
 
 async def notify():
