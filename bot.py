@@ -4,18 +4,18 @@ import discord
 import asyncio
 import random
 import asyncio
-from discord.ext.commands import bot
+from discord.ext import commands
 import pytz
 import json
 from discord import app_commands
 from discord import Embed
 from datetime import datetime
 from collections import defaultdict
+
 from dotenv import load_dotenv
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
-BOT_OWNER_ID = int(os.getenv("BOT_OWNER_ID"))
 
 intents = discord.Intents.default()
 intents.voice_states = True
@@ -39,7 +39,7 @@ def save_greetings(greetings):
 # 挨拶を読み込み
 def load_greetings():
     try:
-        with open("greetings.json", "r") as f:
+        with open("greetings.json", "r", encoding="utf-8") as f:
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         return {}
@@ -63,37 +63,8 @@ async def on_ready():
                 if text_channel:
                     private_channels[voice_channel.id] = text_channel
 
-# interaction.user.idとBOT_OWNER_IDを比較
-async def announcement(interaction: discord.Interaction, *, content: str):
-    if interaction.user.id != BOT_OWNER_ID:
-        await interaction.response.send_message("このコマンドはBot管理者のみが使用できます。", ephemeral=True)
-        return
-
-# アナウンス
-@tree.command(
-    name="announcement",
-    description="Bot管理者がサーバー全体にお知らせを送信します。",
-)
-async def announcement(interaction: discord.Interaction, *, content: str):
-    if interaction.user.id != bot.owner_id:
-        await interaction.response.send_message("このコマンドはBot管理者のみが使用できます。", ephemeral=True)
-        return
-
-    for guild in bot.guilds:
-        # デフォルトのテキストチャンネルを見つける
-        default_channel = None
-        for channel in guild.text_channels:
-            if channel.permissions_for(guild.me).send_messages:
-                default_channel = channel
-                break
-
-        if default_channel is not None:
-            await default_channel.send(content)
-        else:
-            print(f"Could not find a suitable channel to send the announcement in {guild.name}")
-
-    await interaction.response.send_message("お知らせが送信されました。", ephemeral=True)
-    
+                    
+                    
 # ここから予定投票、及び通知コード
 @tree.command(name="time_add_comment", description="通知のために時間とコメントを設定してください")
 async def set_time_and_comment(interaction: discord.Interaction, time: str, comment: str):
@@ -227,12 +198,25 @@ async def send_greeting(member, private_channel):
     await private_channel.send(greeting)
 
 
+async def is_admin(ctx):
+    if not ctx.user.guild_permissions.administrator:
+        embed = Embed(
+            title="エラー",
+            description="このコマンドはサーバー管理者専用です。",
+            color=0xFF0000
+        )
+        await ctx.response.send_message(embed=embed)
+        return False
+    return True
+
 @tree.command(
     name="add_greeting",
     description="特定のメンバーに対する挨拶を追加します"
 )
-@app_commands.commands.has_permissions(administrator=True) 
-async def _add_greeting(ctx, member: discord.Member, greeting: str):
+async def add_greeting(ctx, member: discord.Member, greeting: str):
+    if not await is_admin(ctx):
+        return
+
     specific_member_greetings = load_greetings()
     member_id = str(member.id)
 
@@ -253,8 +237,10 @@ async def _add_greeting(ctx, member: discord.Member, greeting: str):
     name="remove_greeting",
     description="特定のメンバーに対する挨拶を削除します"
 )
-@app_commands.commands.has_permissions(administrator=True) 
-async def _remove_greeting(ctx, member: discord.Member, index: int):
+async def remove_greeting(ctx, member: discord.Member, index: int):
+    if not await is_admin(ctx):
+        return
+
     specific_member_greetings = load_greetings()
     member_id = str(member.id)
 
@@ -286,11 +272,8 @@ async def _remove_greeting(ctx, member: discord.Member, index: int):
         )
         await ctx.response.send_message(embed=embed)
     
-@tree.command(
-    name="list_greetings",
-    description="特定のメンバーに対する挨拶のリストを表示します"
-)
-async def _list_greetings(ctx, member: discord.Member):
+@tree.command(name="list_greetings",description="特定のメンバーに対する挨拶のリストを表示します")
+async def list_greetings(ctx, member: discord.Member):
     specific_member_greetings = load_greetings()
     member_id = str(member.id)
 
