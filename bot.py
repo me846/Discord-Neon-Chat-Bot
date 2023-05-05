@@ -51,7 +51,7 @@ specific_member_greetings = load_greetings()
 async def on_ready():
     print(f"{client.user.name} is ready!")
     await tree.sync()
-    client.loop.create_task(notify())  # タスクを開始
+    client.loop.create_task(notify())
 
     # プライベートチャンネルを検索して辞書に追加
     for guild in client.guilds:
@@ -86,7 +86,7 @@ async def set_time_and_comment(interaction: discord.Interaction, time: str, comm
     await message.add_reaction("❌")
 
     embed = Embed(description=f"通知が{time}に設定されました。", color=0x00FF00)
-    await interaction.response.send_message(embed=embed, ephemeral=True)  # メッセージを隠す
+    await interaction.response.send_message(embed=embed, ephemeral=True) 
 
 
 @client.event
@@ -135,7 +135,7 @@ async def notify():
                     embed = Embed(description="誰も居ませんね！予定をキャンセルします！", color=0xFF0000)
                     await message.reply(embed=embed)
                     await message.clear_reactions()
-                    if message_id in message_data:  # KeyErrorを発生させないように
+                    if message_id in message_data: 
                         del message_data[message_id]
                 else:
                     channel = client.get_channel(message.channel.id)
@@ -145,10 +145,10 @@ async def notify():
                     await channel.send(f"{mentions}", embed=embed)
                     await message.clear_reaction("⏰")
                     await message.clear_reaction("❌")
-                    if message_id in message_data:  # KeyErrorを発生させないように
+                    if message_id in message_data: 
                         del message_data[message_id]
 
-        await asyncio.sleep(1)  # 1秒毎にチェック
+        await asyncio.sleep(1)
 
 
 # 特定のメンバーのIDとメッセージを定義
@@ -166,7 +166,7 @@ async def send_greeting(member, private_channel):
         greetings = specific_member_greetings[member_id]
         greeting = random.choice(greetings)
     else:
-        # ランダムな挨拶メッセージのリストを定義します
+        # ランダムな挨拶メッセージのリストを定義
         random_greetings = [
         # デフォ
         f"{member.mention} VCチャットはこっちだよ！",
@@ -305,7 +305,7 @@ async def delete_all_messages(channel):
 @client.event
 async def on_voice_state_update(member, before, after):
     if before.channel != after.channel:
-        if after.channel:  # ユーザーがボイスチャンネルに参加した場合
+        if after.channel: 
             guild = after.channel.guild
             private_channel = private_channels.get(after.channel.id)
 
@@ -351,7 +351,7 @@ async def on_voice_state_update(member, before, after):
 
             # ボイスチャンネルに誰もいない場合は、チャットをクリアする
             if len(before.channel.members) == 0:
-                await asyncio.sleep(1)  # やや遅延を入れる
+                await asyncio.sleep(1)  
                 await private_channel.purge(limit=50)
 
 # ヘルプコマンド
@@ -369,6 +369,6 @@ async def help_command(interaction: discord.Interaction):
     embed.add_field(name="*1", value="APIレートが制限された場合、最小限の動作になります。\n詳しくはhttps://support-dev.discord.com/hc/ja/articles/6223003921559-%E7%A7%81%E3%81%AEBot%E3%81%8C%E3%83%AC%E3%83%BC%E3%83%88%E5%88%B6%E9%99%90%E3%81%95%E3%82%8C%E3%81%A6%E3%82%8B-　 ", inline=False)
     
 # ヘルプメッセージを送信します
-    await interaction.response.send_message(embed=embed) # メッセージを隠す
+    await interaction.response.send_message(embed=embed) 
 
 client.run(TOKEN)
