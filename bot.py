@@ -4,9 +4,9 @@ import discord
 import asyncio
 import random
 import asyncio
+from discord.ext.commands import bot
 import pytz
 import json
-from discord.ext import tasks
 from discord import app_commands
 from discord import Embed
 from datetime import datetime
@@ -231,6 +231,7 @@ async def send_greeting(member, private_channel):
     name="add_greeting",
     description="特定のメンバーに対する挨拶を追加します"
 )
+@app_commands.commands.has_permissions(administrator=True) 
 async def _add_greeting(ctx, member: discord.Member, greeting: str):
     specific_member_greetings = load_greetings()
     member_id = str(member.id)
@@ -252,6 +253,7 @@ async def _add_greeting(ctx, member: discord.Member, greeting: str):
     name="remove_greeting",
     description="特定のメンバーに対する挨拶を削除します"
 )
+@app_commands.commands.has_permissions(administrator=True) 
 async def _remove_greeting(ctx, member: discord.Member, index: int):
     specific_member_greetings = load_greetings()
     member_id = str(member.id)
