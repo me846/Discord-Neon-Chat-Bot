@@ -47,11 +47,17 @@ def load_greetings():
 # 起動時に読み込む
 specific_member_greetings = load_greetings()
 
+async def update_status():
+    server_count = len(client.guilds)
+    await client.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name=f"{server_count} servers"))
+
 @client.event
 async def on_ready():
     print(f"{client.user.name} is ready!")
     await tree.sync()
     client.loop.create_task(notify())
+    print(f'{client.user} has connected to Discord!')
+    await update_status() 
 
     # プライベートチャンネルを検索して辞書に追加
     for guild in client.guilds:
@@ -62,6 +68,16 @@ async def on_ready():
                 text_channel = discord.utils.get(category.text_channels, name=text_channel_name)
                 if text_channel:
                     private_channels[voice_channel.id] = text_channel
+                  
+@client.event
+async def on_guild_join(guild):
+    print(f'Joined new guild: {guild.name}')
+    await update_status()
+
+@client.event
+async def on_guild_remove(guild):
+    print(f'Removed from guild: {guild.name}')
+    await update_status()
 
                     
                     
