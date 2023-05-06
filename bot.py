@@ -354,23 +354,23 @@ async def on_voice_state_update(member, before, after):
 
             await private_channel.set_permissions(member, read_messages=True)
 
-            # メンバーがボットでない場合にのみ挨拶を送信する
+            
             if not member.bot:
                 await send_greeting(member, private_channel)
 
     if before.channel and before.channel != after.channel:
         private_channel = private_channels.get(before.channel.id)
         if private_channel:
-            # メンバーがボットでない場合にのみ、権限をリセットする
+           
             if not member.bot:
                 await private_channel.set_permissions(member, read_messages=None)
 
-            # ボイスチャンネルに誰もいない場合は、チャットをクリアする
+            
             if len(before.channel.members) == 0:
                 await asyncio.sleep(1)  
                 await private_channel.purge(limit=50)
 
-# ヘルプコマンド
+
 @tree.command(name="help", description="このボットの使い方を表示します。")
 async def help_command(interaction: discord.Interaction):
     embed = discord.Embed(title="ボットの使い方", color=discord.Color.blue())
@@ -384,7 +384,7 @@ async def help_command(interaction: discord.Interaction):
    
     embed.add_field(name="*1", value="APIレートが制限された場合、最小限の動作になります。\n詳しくはhttps://support-dev.discord.com/hc/ja/articles/6223003921559-%E7%A7%81%E3%81%AEBot%E3%81%8C%E3%83%AC%E3%83%BC%E3%83%88%E5%88%B6%E9%99%90%E3%81%95%E3%82%8C%E3%81%A6%E3%82%8B-　 ", inline=False)
     
-# ヘルプメッセージを送信します
+
     await interaction.response.send_message(embed=embed) 
 
 client.run(TOKEN)
