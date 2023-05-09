@@ -4,9 +4,9 @@ import discord
 import asyncio
 import random
 import asyncio
-from discord.ext import commands
 import pytz
 import json
+from discord.ext import commands
 from discord import app_commands
 from discord import Embed
 from datetime import datetime
@@ -326,18 +326,12 @@ async def on_voice_state_update(member, before, after):
             private_channel = private_channels.get(after.channel.id)
 
             if private_channel is None:
-                subadmin_role = discord.utils.get(guild.roles, name="sub_admin")
-                if subadmin_role is None:
-                    subadmin_role = await guild.create_role(name="sub_admin")
-
                 overwrites = {
                     guild.default_role: discord.PermissionOverwrite(read_messages=False),
                     guild.me: discord.PermissionOverwrite(read_messages=True),
                     member: discord.PermissionOverwrite(read_messages=True),
-                    subadmin_role: discord.PermissionOverwrite(read_messages=True)
                 }
 
-                # 同じ名前のテキストチャンネルが既に存在するかどうかを確認する
                 text_channel_name = after.channel.name
                 existing_channel = discord.utils.get(guild.text_channels, name=text_channel_name, category=after.channel.category)
 
@@ -354,7 +348,6 @@ async def on_voice_state_update(member, before, after):
 
             await private_channel.set_permissions(member, read_messages=True)
 
-            
             if not member.bot:
                 await send_greeting(member, private_channel)
 
@@ -365,10 +358,12 @@ async def on_voice_state_update(member, before, after):
             if not member.bot:
                 await private_channel.set_permissions(member, read_messages=None)
 
-            
             if len(before.channel.members) == 0:
-                await asyncio.sleep(1)  
-                await private_channel.purge(limit=50)
+                while True:
+                    deleted_messages = await private_channel.purge(limit=50)
+                    await asyncio.sleep(1)
+                    if len(deleted_messages) < 50:
+                        break
 
 
 @tree.command(name="help", description="このボットの使い方を表示します。")
