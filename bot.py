@@ -360,9 +360,9 @@ async def on_voice_state_update(member, before, after):
 
             if len(before.channel.members) == 0:
                 while True:
-                    deleted_messages = await private_channel.purge(limit=50)
+                    deleted_messages = await private_channel.purge(limit=20)
                     await asyncio.sleep(1)
-                    if len(deleted_messages) < 50:
+                    if len(deleted_messages) < 20:
                         break
 
 
