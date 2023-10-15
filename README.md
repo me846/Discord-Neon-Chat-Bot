@@ -25,7 +25,7 @@ Neon Chat Botは、痒い所に手が届うようなボットです。
 - 招待リンク
 [ここから](https://discord.com/api/oauth2/authorize?client_id=1091866644164395140&permissions=268643376&scope=bot%20applications.commands)
 
-- ***個人で利用したい人***
+- ***個人で利用したい人***  
 1.ボットをDiscordサーバーに招待します。  
 2.ボットが必要な権限を持っていることを確認してください。  
 3.スラッシュコマンドを使って、挨拶メッセージを追加・削除・リスト表示できます。  
