@@ -10,9 +10,6 @@ bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
 
 @bot.event
 async def on_ready():
-    # Botのステータスを固定で設定する
-    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name='over the server'))
-
     # Cogsを読み込む
     for filename in os.listdir('./cogs'):
         if filename.endswith('.py'):
