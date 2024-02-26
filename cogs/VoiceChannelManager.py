@@ -47,8 +47,7 @@ class VoiceChannelManagerCog(commands.Cog):
         if before.channel != after.channel:
             if after.channel:
                 guild = after.channel.guild
-                private_channel = private_channels.get(after.channel.id)
-                text_channel_name = f"{after.channel.name}-private"
+                text_channel_name = after.channel.name
                 existing_channel = discord.utils.get(guild.text_channels, name=text_channel_name)
     
                 if not existing_channel:
