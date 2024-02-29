@@ -25,28 +25,28 @@ class VoiceChannelManagerCog(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        self.private_channels = {}
+        self.initialize_private_channels()
         self.specific_member_greetings = {
             "1234567890": [
                 "{member.mention} sample text",
             ],
         }
-        self.initialize_private_channels()
 
     def initialize_private_channels(self):
         for guild in self.bot.guilds:
             for category in guild.categories:
                 for voice_channel in category.voice_channels:
-                    text_channel_name = f"{voice_channel.name}-private"
+                    text_channel_name = f"{voice_channel.name}"
                     text_channel = discord.utils.get(category.text_channels, name=text_channel_name)
                     if text_channel:
-                        self.private_channels[voice_channel.id] = text_channel
+                        private_channels[voice_channel.id] = text_channel
     
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
         if before.channel != after.channel:
             if after.channel:
                 guild = after.channel.guild
+                # テキストチャンネル名をボイスチャンネルと同じに設定
                 text_channel_name = after.channel.name
                 existing_channel = discord.utils.get(guild.text_channels, name=text_channel_name)
     
@@ -69,7 +69,7 @@ class VoiceChannelManagerCog(commands.Cog):
                     await private_channel.set_permissions(member, read_messages=True, send_messages=True)
                     if not member.bot:
                         await self.send_greeting(member, private_channel)
-
+    
         if before.channel and before.channel != after.channel:
             guild = before.channel.guild if before.channel else None
             if guild:
@@ -77,14 +77,13 @@ class VoiceChannelManagerCog(commands.Cog):
                 if private_channel and private_channel in guild.text_channels:
                     if not member.bot:
                         await private_channel.set_permissions(member, read_messages=None)
-
+    
                     if len(before.channel.members) == 0:
                         while True:
                             deleted_messages = await private_channel.purge(limit=20)
                             await asyncio.sleep(1)
                             if len(deleted_messages) < 20:
                                 break
-                            
 
     async def send_greeting(self, member, private_channel):
         member_id = str(member.id)
