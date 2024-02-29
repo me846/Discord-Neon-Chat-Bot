@@ -1,115 +1,127 @@
 import discord
-from discord.ext import commands, tasks
-from discord import app_commands
-
-from datetime import datetime
-
-import re
-import pytz
+from discord.ext import commands
+import random
 import asyncio
+import os
+import sqlite3
+from .Greetings import GreetingsCommandsCog
 
+private_channels = {}
+specific_member_greetings = {}
 
-message_data = {}
+DB_PATH = os.path.join('data', 'greetings.db')
 
-class ScheduleNotifierCog(commands.Cog):
+def init_db():
+    if not os.path.exists('data'):
+        os.makedirs('data')
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS greetings
+        (guild_id text, member_id text, greeting text)''')
+    conn.commit()
+    conn.close()
+
+class VoiceChannelManagerCog(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        self.notify.start()
+        self.initialize_private_channels()
+        self.specific_member_greetings = {
+            "1234567890": [
+                "{member.mention} sample text",
+            ],
+        }
 
-    @app_commands.command(
-        name='time_add_comment',
-        description='通知のために時間とコメントを設定してください'
-    )
-    async def set_time_and_comment(self, itn: discord.Interaction, time: str, comment: str):
-        if not re.match(r'^([0-1]\d|2[0-3]):([0-5]\d)$', time):
-            embed = discord.Embed(description="時間は半角数字で00:00の形式で入力してください。（00〜23の間）", color=0xFF0000)
-            await itn.response.send_message(embed=embed, ephemeral=True)
-            return
-
-        channel = itn.channel
-        embed = discord.Embed(description=f"{time}に{comment}が予定されました！リアクションボタンを押してください。",
-                        color=0x00FF00,
-                        timestamp=datetime.utcnow())
-        embed.set_footer(text=f"予定者: {itn.user.display_name}", icon_url=itn.user.display_avatar.url)
-        message = await channel.send(embed=embed)
-        message_id = message.id
-        message_data[message_id] = (time, comment, message, [], False, [], itn.user)
-
-        await message.add_reaction("⏰")
-        await message.add_reaction("❌")
-
-        embed = discord.Embed(description=f"通知が{time}に設定されました。", color=0x00FF00)
-        await itn.response.send_message(embed=embed, ephemeral=True)
-        
+    def initialize_private_channels(self):
+        for guild in self.bot.guilds:
+            for category in guild.categories:
+                for voice_channel in category.voice_channels:
+                    text_channel_name = f"{voice_channel.name}"
+                    text_channel = discord.utils.get(category.text_channels, name=text_channel_name)
+                    if text_channel:
+                        private_channels[voice_channel.id] = text_channel
+    
     @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload):
-        if payload.member == self.bot.user:
-            return
+    async def on_voice_state_update(self, member, before, after):
+        if before.channel != after.channel:
+            if after.channel:
+                guild = after.channel.guild
+                # テキストチャンネル名をボイスチャンネルと同じに設定
+                text_channel_name = after.channel.name
+                existing_channel = discord.utils.get(guild.text_channels, name=text_channel_name)
+    
+                if not existing_channel:
+                    overwrites = {
+                        guild.default_role: discord.PermissionOverwrite(read_messages=False),
+                        guild.me: discord.PermissionOverwrite(read_messages=True),
+                        member: discord.PermissionOverwrite(read_messages=True),
+                    }
+                    private_channel = await guild.create_text_channel(
+                        name=text_channel_name,
+                        overwrites=overwrites,
+                        category=after.channel.category
+                    )
+                    private_channels[after.channel.id] = private_channel
+                else:
+                    private_channel = existing_channel
+    
+                if private_channel and member not in private_channel.members:
+                    await private_channel.set_permissions(member, read_messages=True, send_messages=True)
+                    if not member.bot:
+                        await self.send_greeting(member, private_channel)
+    
+        if before.channel and before.channel != after.channel:
+            guild = before.channel.guild if before.channel else None
+            if guild:
+                private_channel = private_channels.get(before.channel.id)
+                if private_channel and private_channel in guild.text_channels:
+                    if not member.bot:
+                        await private_channel.set_permissions(member, read_messages=None)
+    
+                    if len(before.channel.members) == 0:
+                        while True:
+                            deleted_messages = await private_channel.purge(limit=20)
+                            await asyncio.sleep(1)
+                            if len(deleted_messages) < 20:
+                                break
 
-        channel = self.bot.get_channel(payload.channel_id)
-        message_id = payload.message_id
-        if message_id in message_data:
-            time, comment, message, users, cancelled, cancelled_messages, author = message_data[message_id]
-            if payload.message_id == message.id:
-                if str(payload.emoji) == "⏰":
-                    embed = discord.Embed(description=f"{time}に通知されます。", color=0x00FF00)
-                    notify_message = await channel.send(f"{payload.member.mention}", embed=embed)
-                    users.append(payload.member.mention)
-                    cancelled_messages.append(notify_message)
-                    message_data[message_id] = (time, comment, message, users, cancelled, cancelled_messages, author)
+    async def send_greeting(self, member, private_channel):
+        member_id = str(member.id)
 
-                    delete_after = 3
-                    await asyncio.sleep(delete_after)
-                    try:
-                        await notify_message.delete()
-                    except discord.NotFound:
-                        pass  # 何も行わない
-
-                elif str(payload.emoji) == "❌" and payload.member == author:
-                    if not cancelled:
-                        embed = discord.Embed(description="予定をキャンセルされました", color=0xFF0000)
-                        await message.reply(embed=embed)
-                        for msg in cancelled_messages:
-                            await msg.delete()
-                        await message.clear_reactions()
-                        message_data[message_id] = (time, comment, message, users, True, [], author)
-                        
-    @tasks.loop(seconds=1)
-    async def notify(self):
-        while True:
-            for message_id, data in list(message_data.items()):
-                scheduled_time, comment, message, users, cancelled, cancelled_messages, author = data
-
-                # 現在のUTC時間を取得し、日本時間に変換
-                utc_now = datetime.now(pytz.utc)
-                jst_now = utc_now.astimezone(pytz.timezone("Asia/Tokyo"))
-                current_time = jst_now.strftime('%H:%M')
-
-                if current_time == scheduled_time and not cancelled:
-                    if not users:  # ユーザーがいない場合
-                        embed = discord.Embed(description="誰も居ませんね！予定をキャンセルします！", color=0xFF0000)
-                        await message.reply(embed=embed)
-                        await message.clear_reactions()
-                        if message_id in message_data:
-                            del message_data[message_id]
-                    else:
-                        channel = self.bot.get_channel(message.channel.id)
-                        if channel:
-                            mentions = ' '.join(users)
-                            embed = discord.Embed(description="予定の時間だよ！", color=0x00FF00)
-                            await channel.send(f"{mentions}", embed=embed)
-                            await message.clear_reaction("⏰")
-                            await message.clear_reaction("❌")
-                            if message_id in message_data:
-                                del message_data[message_id]
-
-            await asyncio.sleep(1)  # 1秒ごとにチェック
-            
-    @notify.before_loop
-    async def before_notify(self):
-        print('waiting until bot is ready')
-        await self.bot.wait_until_ready()
+        if member_id in self.specific_member_greetings:
+            greetings = self.specific_member_greetings[member_id]
+            greeting = random.choice(greetings).format(member=member)
+        else:
+            # ランダムな挨拶メッセージのリストを定義
+            random_greetings = [
+            # デフォ
+            f"{member.mention} VCチャットはこっちだよ！",
+            # お嬢様
+            f"{member.mention} まあ、ご来訪いただき恐悦至極でございます。どうぞお入りくださいませ",
+            f"{member.mention} ご来訪を心よりお待ち申し上げておりました。どうぞお入りいただき、おくつろぎください。",
+            f"{member.mention} お客様のご来訪、誠に光栄でございます。どうぞお気軽にお入りくださいませ。",
+            # ツンデレ
+            f"{member.mention} あんた、ここに来るなんて…まあ、入ってもいいけどね！",
+            f"{member.mention} なんであんたが来たのか分からないけど、仕方ないわね。入っていいわよ。",
+            f"{member.mention} 何でこんなところに？別に歓迎してるわけじゃないんだから。まあ、入っていいわよ。",
+            # 天然
+            f"{member.mention} あら、ここに来たのね。どうぞ、どうぞ、お入りなさい。",
+            f"{member.mention} わあ、来てくれたんだね。どうぞ、お気軽にお入りください。",
+            # 中二病
+            f"{member.mention} 闇の扉を叩いた者よ、我が領域への侵入を許可する。",
+            f"{member.mention} おお、来たるべき者が現れたか。さあ、我が深淵へ進め！",
+            f"{member.mention} 運命の導きにより、ここへ辿り着いたか。恐れることなく、入っておくれ。",
+            f"{member.mention} 終焉の地にてお前を待ち受けていた。勇気を持ち、我が領域へ入るがいい。",
+            # 執事
+            f"{member.mention} ご来訪誠にありがとうございます。どうぞお入りくださいませ、お客様。",
+            f"{member.mention} いらっしゃいませ、お客様。こちらへどうぞお進みいただき、おくつろぎいただければと存じます。",
+            f"{member.mention} ご来館いただき、誠にありがとうございます。どうぞお気軽にお入りください。",
+            f"{member.mention} お越しいただき光栄でございます。どうぞお入りいただき、おくつろぎください。",
+            ]
+            greeting = random.choice(random_greetings).format(member=member)
+    
+        await private_channel.send(greeting)
 
 async def setup(bot):
-    await bot.add_cog(ScheduleNotifierCog(bot))
+    init_db()
+    await bot.add_cog(VoiceChannelManagerCog(bot))
