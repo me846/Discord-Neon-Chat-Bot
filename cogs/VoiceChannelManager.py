@@ -4,6 +4,7 @@ import random
 import asyncio
 import os
 import sqlite3
+import unicodedata
 from .Greetings import GreetingsCommandsCog
 
 private_channels = {}
@@ -40,7 +41,10 @@ class VoiceChannelManagerCog(commands.Cog):
                     text_channel = discord.utils.get(category.text_channels, name=text_channel_name)
                     if text_channel:
                         private_channels[voice_channel.id] = text_channel
-    
+
+    def normalize_channel_name(self, name):
+        return unicodedata.normalize('NFKC', name)
+
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
         if before.channel != after.channel:
@@ -48,8 +52,14 @@ class VoiceChannelManagerCog(commands.Cog):
                 guild = after.channel.guild
                 # テキストチャンネル名をボイスチャンネルと同じに設定
                 text_channel_name = after.channel.name
-                existing_channel = discord.utils.get(guild.text_channels, name=text_channel_name)
-    
+
+                # 特殊文字を正規化して一致するかどうかチェック
+                normalized_name = self.normalize_channel_name(text_channel_name)
+                existing_channel = discord.utils.get(
+                    guild.text_channels,
+                    name=lambda n: self.normalize_channel_name(n) == normalized_name
+                )
+
                 if not existing_channel:
                     overwrites = {
                         guild.default_role: discord.PermissionOverwrite(read_messages=False),
@@ -64,12 +74,12 @@ class VoiceChannelManagerCog(commands.Cog):
                     private_channels[after.channel.id] = private_channel
                 else:
                     private_channel = existing_channel
-    
+
                 if private_channel and member not in private_channel.members:
                     await private_channel.set_permissions(member, read_messages=True, send_messages=True)
                     if not member.bot:
                         await self.send_greeting(member, private_channel)
-    
+
         if before.channel and before.channel != after.channel:
             guild = before.channel.guild if before.channel else None
             if guild:
@@ -77,7 +87,7 @@ class VoiceChannelManagerCog(commands.Cog):
                 if private_channel and private_channel in guild.text_channels:
                     if not member.bot:
                         await private_channel.set_permissions(member, read_messages=None)
-    
+
                     if len(before.channel.members) == 0:
                         while True:
                             deleted_messages = await private_channel.purge(limit=20)
@@ -94,32 +104,32 @@ class VoiceChannelManagerCog(commands.Cog):
         else:
             # ランダムな挨拶メッセージのリストを定義
             random_greetings = [
-            # デフォ
-            f"{member.mention} VCチャットはこっちだよ！",
-            # お嬢様
-            f"{member.mention} まあ、ご来訪いただき恐悦至極でございます。どうぞお入りくださいませ",
-            f"{member.mention} ご来訪を心よりお待ち申し上げておりました。どうぞお入りいただき、おくつろぎください。",
-            f"{member.mention} お客様のご来訪、誠に光栄でございます。どうぞお気軽にお入りくださいませ。",
-            # ツンデレ
-            f"{member.mention} あんた、ここに来るなんて…まあ、入ってもいいけどね！",
-            f"{member.mention} なんであんたが来たのか分からないけど、仕方ないわね。入っていいわよ。",
-            f"{member.mention} 何でこんなところに？別に歓迎してるわけじゃないんだから。まあ、入っていいわよ。",
-            # 天然
-            f"{member.mention} あら、ここに来たのね。どうぞ、どうぞ、お入りなさい。",
-            f"{member.mention} わあ、来てくれたんだね。どうぞ、お気軽にお入りください。",
-            # 中二病
-            f"{member.mention} 闇の扉を叩いた者よ、我が領域への侵入を許可する。",
-            f"{member.mention} おお、来たるべき者が現れたか。さあ、我が深淵へ進め！",
-            f"{member.mention} 運命の導きにより、ここへ辿り着いたか。恐れることなく、入っておくれ。",
-            f"{member.mention} 終焉の地にてお前を待ち受けていた。勇気を持ち、我が領域へ入るがいい。",
-            # 執事
-            f"{member.mention} ご来訪誠にありがとうございます。どうぞお入りくださいませ、お客様。",
-            f"{member.mention} いらっしゃいませ、お客様。こちらへどうぞお進みいただき、おくつろぎいただければと存じます。",
-            f"{member.mention} ご来館いただき、誠にありがとうございます。どうぞお気軽にお入りください。",
-            f"{member.mention} お越しいただき光栄でございます。どうぞお入りいただき、おくつろぎください。",
+                # デフォ
+                f"{member.mention} VCチャットはこっちだよ！",
+                # お嬢様
+                f"{member.mention} まあ、ご来訪いただき恐悦至極でございます。どうぞお入りくださいませ",
+                f"{member.mention} ご来訪を心よりお待ち申し上げておりました。どうぞお入りいただき、おくつろぎください。",
+                f"{member.mention} お客様のご来訪、誠に光栄でございます。どうぞお気軽にお入りくださいませ。",
+                # ツンデレ
+                f"{member.mention} あんた、ここに来るなんて…まあ、入ってもいいけどね！",
+                f"{member.mention} なんであんたが来たのか分からないけど、仕方ないわね。入っていいわよ。",
+                f"{member.mention} 何でこんなところに？別に歓迎してるわけじゃないんだから。まあ、入っていいわよ。",
+                # 天然
+                f"{member.mention} あら、ここに来たのね。どうぞ、どうぞ、お入りなさい。",
+                f"{member.mention} わあ、来てくれたんだね。どうぞ、お気軽にお入りください。",
+                # 中二病
+                f"{member.mention} 闇の扉を叩いた者よ、我が領域への侵入を許可する。",
+                f"{member.mention} おお、来たるべき者が現れたか。さあ、我が深淵へ進め！",
+                f"{member.mention} 運命の導きにより、ここへ辿り着いたか。恐れることなく、入っておくれ。",
+                f"{member.mention} 終焉の地にてお前を待ち受けていた。勇気を持ち、我が領域へ入るがいい。",
+                # 執事
+                f"{member.mention} ご来訪誠にありがとうございます。どうぞお入りくださいませ、お客様。",
+                f"{member.mention} いらっしゃいませ、お客様。こちらへどうぞお進みいただき、おくつろぎいただければと存じます。",
+                f"{member.mention} ご来館いただき、誠にありがとうございます。どうぞお気軽にお入りください。",
+                f"{member.mention} お越しいただき光栄でございます。どうぞお入りいただき、おくつろぎください。",
             ]
             greeting = random.choice(random_greetings).format(member=member)
-    
+
         await private_channel.send(greeting)
 
 async def setup(bot):
