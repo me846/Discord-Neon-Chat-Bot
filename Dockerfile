@@ -1,4 +1,4 @@
-FROM python-3.13.0
+FROM python:3.13.0
 WORKDIR /bot
 
 RUN apt-get update && apt-get -y install locales && apt-get -y upgrade && \
