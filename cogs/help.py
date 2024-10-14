@@ -13,7 +13,6 @@ class HelpCommands(commands.Cog):
     async def help_command(self, ctx: discord.Interaction):
         embed = discord.Embed(title="ボットの使い方", color=discord.Color.blue())
 
-        embed.add_field(name="/time_add_comment <time> <comment>", value="指定した時刻とコメントで通知を設定します。\n例: `/time_add_comment 14:30 会議が始まります。`", inline=False)
         embed.add_field(name="ボイスチャンネルへの参加/退出", value="ボイスチャンネルに参加すると、専用のプライベートテキストチャンネルが作成されます。ボイスチャンネルから退出すると、そのテキストチャンネルへのアクセスが解除されます。全員が退出するとプライベートチャンネル内のチャットは削除されます。", inline=False)
         embed.add_field(name="入場時の挨拶", value="ユーザーがボイスチャンネルに入ると、ボットが設定された挨拶メッセージを送信します。個別のメンバーに対してカスタム挨拶メッセージを設定することができます。", inline=False)
         embed.add_field(name="/add_greeting <member> <greeting>", value="特定のメンバーに対する挨拶を追加します。メンバーは@メンションまたはユーザーIDで指定できます。例: `/add_greeting @username こんにちは、ようこそ！`", inline=False)

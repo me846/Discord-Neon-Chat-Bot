@@ -1,15 +1,12 @@
 import discord
 from discord.ext import commands
 import random
-import asyncio
 import os
+import json
 import sqlite3
-from .Greetings import GreetingsCommandsCog
-
-private_channels = {}
-specific_member_greetings = {}
 
 DB_PATH = os.path.join('data', 'greetings.db')
+DATA_FILE = 'private_channels.json'
 
 def init_db():
     if not os.path.exists('data'):
@@ -25,71 +22,147 @@ class VoiceChannelManagerCog(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        self.initialize_private_channels()
-        self.specific_member_greetings = {
-            "1234567890": [
-                "{member.mention} sample text",
-            ],
-        }
+        self.private_channels = {}  # {voice_channel_id: text_channel_id}
+        self.load_private_channels()
+        self.specific_member_greetings = {}
+        init_db()
+        self.load_greetings()
 
-    def initialize_private_channels(self):
-        for guild in self.bot.guilds:
-            for category in guild.categories:
-                for voice_channel in category.voice_channels:
-                    text_channel_name = f"{voice_channel.name}"
-                    text_channel = discord.utils.get(category.text_channels, name=text_channel_name)
-                    if text_channel:
-                        private_channels[voice_channel.id] = text_channel
-    
+    def load_private_channels(self):
+        if os.path.exists(DATA_FILE):
+            with open(DATA_FILE, 'r') as f:
+                self.private_channels = json.load(f)
+        else:
+            self.private_channels = {}
+
+    def save_private_channels(self):
+        with open(DATA_FILE, 'w') as f:
+            json.dump(self.private_channels, f)
+
+    def load_greetings(self):
+        # データベースから挨拶メッセージを読み込み
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute('SELECT member_id, greeting FROM greetings')
+        rows = c.fetchall()
+        self.specific_member_greetings = {}
+        for member_id, greeting in rows:
+            if member_id in self.specific_member_greetings:
+                self.specific_member_greetings[member_id].append(greeting)
+            else:
+                self.specific_member_greetings[member_id] = [greeting]
+        conn.close()
+
+    def save_greeting(self, member_id, greeting):
+        # 挨拶メッセージをデータベースに保存
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute('INSERT INTO greetings (guild_id, member_id, greeting) VALUES (?, ?, ?)', (str(self.bot.guilds[0].id), member_id, greeting))
+        conn.commit()
+        conn.close()
+
+    def sanitize_channel_name(self, name):
+        # Discordのチャンネル名に使用できる文字のみを許可
+        allowed_chars = "abcdefghijklmnopqrstuvwxyz0123456789-_"
+        name = name.lower().replace(" ", "-")
+        sanitized = "".join(c for c in name if c in allowed_chars)
+        return sanitized[:100]  # 最大100文字に制限
+
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        await self.initialize_private_channels()
+
+    async def initialize_private_channels(self):
+        for voice_channel_id, text_channel_id in list(self.private_channels.items()):
+            voice_channel = self.bot.get_channel(int(voice_channel_id))
+            text_channel = self.bot.get_channel(int(text_channel_id))
+            if voice_channel and text_channel:
+                for member in voice_channel.members:
+                    await text_channel.set_permissions(member, read_messages=True, send_messages=True)
+            else:
+                # チャンネルが存在しない場合はデータを削除
+                self.private_channels.pop(voice_channel_id)
+        self.save_private_channels()
+
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
-        if before.channel != after.channel:
-            if after.channel:
-                guild = after.channel.guild
-                # テキストチャンネル名をボイスチャンネルと同じに設定
-                text_channel_name = after.channel.name
-                existing_channel = discord.utils.get(guild.text_channels, name=text_channel_name)
-    
-                if not existing_channel:
-                    overwrites = {
-                        guild.default_role: discord.PermissionOverwrite(read_messages=False),
-                        guild.me: discord.PermissionOverwrite(read_messages=True),
-                        member: discord.PermissionOverwrite(read_messages=True),
-                    }
-                    private_channel = await guild.create_text_channel(
-                        name=text_channel_name,
-                        overwrites=overwrites,
-                        category=after.channel.category
-                    )
-                    private_channels[after.channel.id] = private_channel
-                else:
-                    private_channel = existing_channel
-    
-                if private_channel and member not in private_channel.members:
-                    await private_channel.set_permissions(member, read_messages=True, send_messages=True)
-                    if not member.bot:
-                        await self.send_greeting(member, private_channel)
-    
-        if before.channel and before.channel != after.channel:
-            guild = before.channel.guild if before.channel else None
-            if guild:
-                private_channel = private_channels.get(before.channel.id)
-                if private_channel and private_channel in guild.text_channels:
-                    if not member.bot:
-                        await private_channel.set_permissions(member, read_messages=None)
-    
-                    if len(before.channel.members) == 0:
-                        while True:
-                            deleted_messages = await private_channel.purge(limit=20)
-                            await asyncio.sleep(1)
-                            if len(deleted_messages) < 20:
-                                break
+        # ユーザーが新しいチャンネルに参加した場合
+        if after.channel and (before.channel != after.channel):
+            await self.handle_user_join(member, after.channel)
+        # ユーザーがチャンネルから退出した場合
+        if before.channel and (before.channel != after.channel):
+            await self.handle_user_leave(member, before.channel)
+
+    async def handle_user_join(self, member, channel):
+        guild = channel.guild
+        voice_channel_id = str(channel.id)
+        text_channel_id = self.private_channels.get(voice_channel_id)
+
+        if text_channel_id:
+            # テキストチャンネルが既に存在する場合
+            private_channel = guild.get_channel(int(text_channel_id))
+            if not private_channel:
+                # テキストチャンネルが削除されている場合は新たに作成
+                private_channel = await self.create_private_text_channel(guild, channel, member)
+                self.private_channels[voice_channel_id] = str(private_channel.id)
+                self.save_private_channels()
+        else:
+            # テキストチャンネルが存在しない場合は新たに作成
+            private_channel = await self.create_private_text_channel(guild, channel, member)
+            self.private_channels[voice_channel_id] = str(private_channel.id)
+            self.save_private_channels()
+
+        if private_channel:
+            await private_channel.set_permissions(member, read_messages=True, send_messages=True)
+            if not member.bot:
+                await self.send_greeting(member, private_channel)
+
+    async def create_private_text_channel(self, guild, voice_channel, member):
+        overwrites = {
+            guild.default_role: discord.PermissionOverwrite(read_messages=False),
+            guild.me: discord.PermissionOverwrite(read_messages=True),
+            member: discord.PermissionOverwrite(read_messages=True),
+        }
+        sanitized_name = self.sanitize_channel_name(voice_channel.name)
+        private_channel = await guild.create_text_channel(
+            name=sanitized_name,
+            overwrites=overwrites,
+            category=voice_channel.category
+        )
+        return private_channel
+
+    async def handle_user_leave(self, member, channel):
+        guild = channel.guild
+        voice_channel_id = str(channel.id)
+        text_channel_id = self.private_channels.get(voice_channel_id)
+
+        if text_channel_id:
+            private_channel = guild.get_channel(int(text_channel_id))
+            if private_channel:
+                if not member.bot:
+                    await private_channel.set_permissions(member, overwrite=None)
+                # ボイスチャンネルにメンバーがいない場合、メッセージを削除
+                if len(channel.members) == 0:
+                    await private_channel.purge()
+            else:
+                # テキストチャンネルが存在しない場合、データを削除
+                self.private_channels.pop(voice_channel_id)
+                self.save_private_channels()
+                
 
     async def send_greeting(self, member, private_channel):
         member_id = str(member.id)
-
-        if member_id in self.specific_member_greetings:
-            greetings = self.specific_member_greetings[member_id]
+        guild_id = str(member.guild.id)
+    
+        # データベースから挨拶を取得
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute("SELECT greeting FROM greetings WHERE guild_id=? AND member_id=?", (guild_id, member_id))
+        greetings = [row[0] for row in c.fetchall()]
+        conn.close()
+    
+        if greetings:
             greeting = random.choice(greetings).format(member=member)
         else:
             # ランダムな挨拶メッセージのリストを定義
@@ -119,7 +192,7 @@ class VoiceChannelManagerCog(commands.Cog):
             f"{member.mention} お越しいただき光栄でございます。どうぞお入りいただき、おくつろぎください。",
             ]
             greeting = random.choice(random_greetings).format(member=member)
-    
+
         await private_channel.send(greeting)
 
 async def setup(bot):
