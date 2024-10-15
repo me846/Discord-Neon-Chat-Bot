@@ -28,7 +28,7 @@ class GreetingsCommandsCog(commands.Cog):
             description=f"{member.mention}: {greeting}",
             color=0x00FF00
         )
-        await ctx.response.send_message(embed=embed)
+        await ctx.response.send_message(embed=embed, ephemeral=True)  # メッセージを実行者にのみ表示
 
     @app_commands.command(
         name='remove_greeting',
@@ -50,14 +50,14 @@ class GreetingsCommandsCog(commands.Cog):
                 description=f"{member.mention}: {removed_greeting[0]}",
                 color=0xFF0000
             )
-            await ctx.response.send_message(embed=embed)
+            await ctx.response.send_message(embed=embed, ephemeral=True)  # メッセージを実行者にのみ表示
         else:
             embed = discord.Embed(
                 title="エラー",
                 description="無効なインデックスです。`/list_greetings` を使って正しいインデックスを確認してください。",
                 color=0xFF0000
             )
-            await ctx.response.send_message(embed=embed)
+            await ctx.response.send_message(embed=embed, ephemeral=True)  # メッセージを実行者にのみ表示
         conn.close()
         
     @app_commands.command(
@@ -78,7 +78,7 @@ class GreetingsCommandsCog(commands.Cog):
                 description="このメンバーには追加された挨拶がありません。",
                 color=0xFF0000
             )
-            await ctx.response.send_message(embed=embed)
+            await ctx.response.send_message(embed=embed, ephemeral=True)  # メッセージを実行者にのみ表示
             return
         
         greetings_list = "\n".join(f"{idx}: {greeting[0]}" for idx, greeting in enumerate(greetings))
@@ -87,7 +87,7 @@ class GreetingsCommandsCog(commands.Cog):
             description=greetings_list,
             color=0x00FF00
         )
-        await ctx.response.send_message(embed=embed)
+        await ctx.response.send_message(embed=embed, ephemeral=True)  # メッセージを実行者にのみ表示
         
 async def setup(bot):
     await bot.add_cog(GreetingsCommandsCog(bot))
