@@ -4,6 +4,8 @@ import random
 import os
 import json
 import sqlite3
+import re
+import time
 
 DB_PATH = os.path.join('data', 'greetings.db')
 DATA_FILE = 'private_channels.json'
@@ -62,12 +64,20 @@ class VoiceChannelManagerCog(commands.Cog):
         conn.close()
 
     def sanitize_channel_name(self, name):
-        # Discordのチャンネル名に使用できる文字のみを許可
-        allowed_chars = "abcdefghijklmnopqrstuvwxyz0123456789-_"
-        name = name.lower().replace(" ", "-")
-        sanitized = "".join(c for c in name if c in allowed_chars)
-        return sanitized[:100]  # 最大100文字に制限
-
+        # 先頭と末尾の空白を削除
+        name = name.strip()
+        # スペースをハイフンに置き換え
+        name = name.replace(" ", "-")
+        # 複数のハイフンを一つのハイフンに統合
+        name = re.sub(r'-+', '-', name)
+        # 制御文字や印字できない文字を除去
+        name = ''.join(c for c in name if c.isprintable() and not c.isspace())
+        # チャンネル名の長さを1～100文字に制限
+        name = name[:100]
+        # チャンネル名が空の場合、デフォルトの名前を設定
+        if not name:
+            name = f"vc-{int(time.time())}"
+        return name
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -198,3 +208,4 @@ class VoiceChannelManagerCog(commands.Cog):
 async def setup(bot):
     init_db()
     await bot.add_cog(VoiceChannelManagerCog(bot))
+
